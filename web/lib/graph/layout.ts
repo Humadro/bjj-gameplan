@@ -9,7 +9,7 @@ export type TechniqueNodeData = { label: string; color: string };
 export type GraphNode = Node<PositionNodeData | TechniqueNodeData>;
 
 const NODE_SIZE: Record<string, { width: number; height: number }> = {
-  position: { width: 150, height: 64 },
+  position: { width: 124, height: 124 }, // círculo (como shape=circle en el .dot)
   technique: { width: 190, height: 48 },
   submission: { width: 180, height: 52 },
 };
@@ -34,16 +34,19 @@ export function buildGraph(
       type: "position",
       data: { label: p.name, isBad: p.is_bad },
       position: { x: 0, y: 0 },
+      style: { ...NODE_SIZE.position },
     });
   }
 
   for (const t of techniques) {
     const color = CONFIDENCE_COLOR[t.confidence];
+    const kind = t.is_submission ? "submission" : "technique";
     nodes.push({
       id: `tech:${t.id}`,
-      type: t.is_submission ? "submission" : "technique",
+      type: kind,
       data: { label: t.name, color },
       position: { x: 0, y: 0 },
+      style: { ...NODE_SIZE[kind] },
     });
 
     // posición de origen -> técnica: flecha sólida negra
@@ -83,7 +86,7 @@ function layout(
   edges: Edge[],
 ): { nodes: GraphNode[]; edges: Edge[] } {
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: "TB", nodesep: 45, ranksep: 90, marginx: 24, marginy: 24 });
+  g.setGraph({ rankdir: "TB", nodesep: 55, ranksep: 80, marginx: 24, marginy: 24 });
   g.setDefaultEdgeLabel(() => ({}));
 
   for (const n of nodes) {

@@ -8,6 +8,57 @@ import { CONFIDENCE_COLOR, CONFIDENCE_LABEL, type Position, type Technique } fro
 const inputCls =
   "rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15 dark:bg-zinc-800";
 
+const NEW = "__new__";
+
+function PositionSelect({
+  label,
+  name,
+  positions,
+  defaultValue,
+  required,
+  emptyLabel,
+}: {
+  label: string;
+  name: "source_position_id" | "destination_position_id";
+  positions: Position[];
+  defaultValue: string;
+  required?: boolean;
+  emptyLabel: string;
+}) {
+  const [isNew, setIsNew] = useState(false);
+  const newName = name === "source_position_id" ? "source_position_new" : "destination_position_new";
+
+  return (
+    <label className="flex flex-col gap-1 text-xs text-zinc-500">
+      {label}
+      <select
+        name={name}
+        defaultValue={defaultValue}
+        required={required}
+        className={inputCls}
+        onChange={(e) => setIsNew(e.currentTarget.value === NEW)}
+      >
+        <option value="">{emptyLabel}</option>
+        {positions.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+        <option value={NEW}>➕ Crear posición nueva…</option>
+      </select>
+      {isNew && (
+        <input
+          name={newName}
+          autoFocus
+          required
+          placeholder="Nombre de la posición nueva"
+          className={inputCls}
+        />
+      )}
+    </label>
+  );
+}
+
 function TechniqueFields({
   positions,
   technique,
@@ -26,24 +77,15 @@ function TechniqueFields({
         required
         className={inputCls}
       />
-      <label className="flex flex-col gap-1 text-xs text-zinc-500">
-        Desde
-        <select
-          name="source_position_id"
-          defaultValue={technique?.source_position_id ?? ""}
-          required
-          className={inputCls}
-        >
-          <option value="" disabled>
-            Elige posición de origen
-          </option>
-          {positions.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </label>
+
+      <PositionSelect
+        label="Desde"
+        name="source_position_id"
+        positions={positions}
+        defaultValue={technique?.source_position_id ?? ""}
+        required
+        emptyLabel="Elige posición de origen"
+      />
 
       <label className="flex items-center gap-2 text-xs text-zinc-500">
         <input
@@ -56,21 +98,13 @@ function TechniqueFields({
       </label>
 
       {!isSubmission && (
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
-          Lleva a
-          <select
-            name="destination_position_id"
-            defaultValue={technique?.destination_position_id ?? ""}
-            className={inputCls}
-          >
-            <option value="">(ninguna / callejón sin salida)</option>
-            {positions.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <PositionSelect
+          label="Lleva a"
+          name="destination_position_id"
+          positions={positions}
+          defaultValue={technique?.destination_position_id ?? ""}
+          emptyLabel="(ninguna / callejón sin salida)"
+        />
       )}
 
       <label className="flex flex-col gap-1 text-xs text-zinc-500">
@@ -92,9 +126,11 @@ function TechniqueFields({
 }
 
 export default function TechniquePanel({
+  mapId,
   positions,
   techniques,
 }: {
+  mapId: string;
   positions: Position[];
   techniques: Technique[];
 }) {
@@ -106,37 +142,30 @@ export default function TechniquePanel({
     [positions],
   );
 
-  const canAdd = positions.length > 0;
-
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
         Técnicas
       </h2>
 
-      {canAdd ? (
-        <form
-          ref={formRef}
-          className="flex flex-col gap-2 rounded-lg border border-black/10 p-3 dark:border-white/10"
-          onSubmit={(e) => {
-            e.preventDefault();
-            run(createTechnique, new FormData(e.currentTarget), () =>
-              formRef.current?.reset(),
-            );
-          }}
+      <form
+        ref={formRef}
+        className="flex flex-col gap-2 rounded-lg border border-black/10 p-3 dark:border-white/10"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(createTechnique, new FormData(e.currentTarget), () => formRef.current?.reset());
+        }}
+      >
+        <input type="hidden" name="map_id" value={mapId} />
+        <TechniqueFields positions={positions} />
+        <button
+          type="submit"
+          disabled={pending}
+          className="self-start rounded-md bg-zinc-900 px-3 py-1 text-sm text-white disabled:opacity-60 dark:bg-white dark:text-zinc-900"
         >
-          <TechniqueFields positions={positions} />
-          <button
-            type="submit"
-            disabled={pending}
-            className="self-start rounded-md bg-zinc-900 px-3 py-1 text-sm text-white disabled:opacity-60 dark:bg-white dark:text-zinc-900"
-          >
-            Añadir técnica
-          </button>
-        </form>
-      ) : (
-        <p className="text-xs text-zinc-500">Crea al menos una posición primero.</p>
-      )}
+          Añadir técnica
+        </button>
+      </form>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
@@ -150,6 +179,7 @@ export default function TechniquePanel({
                   e.preventDefault();
                   const fd = new FormData(e.currentTarget);
                   fd.set("id", t.id);
+                  fd.set("map_id", mapId);
                   run(updateTechnique, fd, () => setEditingId(null));
                 }}
               >
@@ -198,6 +228,7 @@ export default function TechniquePanel({
                     if (!confirm(`¿Borrar la técnica "${t.name}"?`)) return;
                     const fd = new FormData();
                     fd.set("id", t.id);
+                    fd.set("map_id", mapId);
                     run(deleteTechnique, fd);
                   }}
                   className="text-red-600 hover:underline"
@@ -208,7 +239,7 @@ export default function TechniquePanel({
             </li>
           ),
         )}
-        {techniques.length === 0 && canAdd && (
+        {techniques.length === 0 && (
           <li className="text-xs text-zinc-500">Todavía no hay técnicas.</li>
         )}
       </ul>

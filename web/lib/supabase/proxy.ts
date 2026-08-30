@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, hasSupabaseEnv } from "./env";
 
-const PROTECTED_PREFIXES = ["/map"];
+const PROTECTED_PREFIXES = ["/maps"];
 
 // Refresca la sesión de Supabase en cada request y hace los redirects de auth.
 // Se llama desde proxy.ts (antes "middleware" en Next < 16).
@@ -49,7 +49,7 @@ export async function updateSession(request: NextRequest) {
 
   if (user && path === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/map";
+    url.pathname = "/maps";
     return NextResponse.redirect(url);
   }
 

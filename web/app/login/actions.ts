@@ -22,7 +22,7 @@ export async function login(formData: FormData): Promise<AuthResult> {
   if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
-  redirect("/map");
+  redirect("/maps");
 }
 
 export async function signup(formData: FormData): Promise<AuthResult> {
@@ -40,5 +40,5 @@ export async function signup(formData: FormData): Promise<AuthResult> {
   }
 
   revalidatePath("/", "layout");
-  redirect("/map");
+  redirect("/maps");
 }

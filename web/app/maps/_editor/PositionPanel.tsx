@@ -8,7 +8,13 @@ import type { Position } from "@/lib/types";
 const inputCls =
   "rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15 dark:bg-zinc-800";
 
-export default function PositionPanel({ positions }: { positions: Position[] }) {
+export default function PositionPanel({
+  mapId,
+  positions,
+}: {
+  mapId: string;
+  positions: Position[];
+}) {
   const formRef = useRef<HTMLFormElement>(null);
   const { pending, error, run } = useAction();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -27,6 +33,7 @@ export default function PositionPanel({ positions }: { positions: Position[] }) 
           run(createPosition, new FormData(e.currentTarget), () => formRef.current?.reset());
         }}
       >
+        <input type="hidden" name="map_id" value={mapId} />
         <input name="name" placeholder="Nueva posición" required className={inputCls} />
         <label className="flex items-center gap-2 text-xs text-zinc-500">
           <input type="checkbox" name="is_bad" />
@@ -53,6 +60,7 @@ export default function PositionPanel({ positions }: { positions: Position[] }) 
                   e.preventDefault();
                   const fd = new FormData(e.currentTarget);
                   fd.set("id", p.id);
+                  fd.set("map_id", mapId);
                   run(updatePosition, fd, () => setEditingId(null));
                 }}
               >
@@ -94,6 +102,7 @@ export default function PositionPanel({ positions }: { positions: Position[] }) 
                     if (!confirm(`¿Borrar "${p.name}" y sus técnicas de salida?`)) return;
                     const fd = new FormData();
                     fd.set("id", p.id);
+                    fd.set("map_id", mapId);
                     run(deletePosition, fd);
                   }}
                   className="text-red-600 hover:underline"
