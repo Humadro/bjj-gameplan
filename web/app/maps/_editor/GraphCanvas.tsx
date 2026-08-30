@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import {
   Background,
   Controls,
   Handle,
   MiniMap,
+  Panel,
   Position as HandlePosition,
   ReactFlow,
   type NodeProps,
@@ -13,6 +14,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { buildGraph, type PositionNodeData, type TechniqueNodeData } from "@/lib/graph/layout";
 import type { Position, Technique } from "@/lib/types";
+import ExportButton from "./ExportButton";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1, border: "none" } as const;
 
@@ -72,9 +74,11 @@ const nodeTypes = {
 export default function GraphCanvas({
   positions,
   techniques,
+  toolbar,
 }: {
   positions: Position[];
   techniques: Technique[];
+  toolbar?: ReactNode;
 }) {
   const { nodes, edges } = useMemo(
     () => buildGraph(positions, techniques),
@@ -106,6 +110,10 @@ export default function GraphCanvas({
       <Background color="#d4d4d8" gap={22} />
       <Controls showInteractive={false} />
       <MiniMap pannable zoomable />
+      <Panel position="top-right" className="flex items-start gap-2">
+        {toolbar}
+        <ExportButton />
+      </Panel>
     </ReactFlow>
   );
 }

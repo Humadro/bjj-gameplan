@@ -3,6 +3,7 @@ import MapSwitcher from "./MapSwitcher";
 import OnboardingChecklist from "./OnboardingChecklist";
 import PositionPanel from "./PositionPanel";
 import SeedPanel from "./SeedPanel";
+import ShareButton from "./ShareButton";
 import TechniquePanel from "./TechniquePanel";
 import type { Position, Technique } from "@/lib/types";
 
@@ -10,6 +11,7 @@ export default function MapView({
   email,
   mapId,
   mapName,
+  shareSlug,
   maps,
   positions,
   techniques,
@@ -17,6 +19,7 @@ export default function MapView({
   email: string | undefined;
   mapId: string;
   mapName: string;
+  shareSlug: string | null;
   maps: { id: string; name: string }[];
   positions: Position[];
   techniques: Technique[];
@@ -51,7 +54,11 @@ export default function MapView({
         {positions.length === 0 ? (
           <SeedPanel mapId={mapId} mapName={mapName} />
         ) : (
-          <GraphCanvas positions={positions} techniques={techniques} />
+          <GraphCanvas
+            positions={positions}
+            techniques={techniques}
+            toolbar={<ShareButton mapId={mapId} shareSlug={shareSlug} />}
+          />
         )}
       </main>
     </div>

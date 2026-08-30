@@ -53,6 +53,41 @@ export async function renameMap(formData: FormData): Promise<MapActionResult> {
   return {};
 }
 
+// Activa / desactiva el enlace público de solo lectura. Al activar genera un
+// slug nuevo si no había; "regenerar" = desactivar y volver a activar.
+export async function setMapSharing(formData: FormData): Promise<MapActionResult> {
+  const { supabase, user } = await authed();
+  if (!user) return { error: "No autenticado." };
+
+  const id = str(formData, "id");
+  const enabled = str(formData, "enabled") === "1";
+  if (!id) return { error: "Falta el id del mapa." };
+
+  if (!enabled) {
+    const { error } = await supabase.from("maps").update({ public_slug: null }).eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath(`/maps/${id}`);
+    return {};
+  }
+
+  // ¿ya tiene slug? lo dejamos; si no, generamos uno.
+  const { data: current } = await supabase
+    .from("maps")
+    .select("public_slug")
+    .eq("id", id)
+    .maybeSingle();
+  if (current?.public_slug) return {};
+
+  const { error } = await supabase
+    .from("maps")
+    .update({ public_slug: crypto.randomUUID() })
+    .eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/maps/${id}`);
+  return {};
+}
+
 export async function deleteMap(formData: FormData): Promise<MapActionResult> {
   const { supabase, user } = await authed();
   if (!user) return { error: "No autenticado." };

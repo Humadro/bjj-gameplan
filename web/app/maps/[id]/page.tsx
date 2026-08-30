@@ -19,7 +19,7 @@ export default async function MapEditorPage({
 
   const { data: map } = await supabase
     .from("maps")
-    .select("id, name")
+    .select("id, name, public_slug")
     .eq("id", id)
     .maybeSingle();
   if (!map) notFound();
@@ -43,6 +43,7 @@ export default async function MapEditorPage({
       email={user.email}
       mapId={map.id as string}
       mapName={map.name as string}
+      shareSlug={(map.public_slug as string | null) ?? null}
       maps={(maps.data as { id: string; name: string }[] | null) ?? []}
       positions={(positionsRes.data as Position[] | null) ?? []}
       techniques={(techniquesRes.data as Technique[] | null) ?? []}
