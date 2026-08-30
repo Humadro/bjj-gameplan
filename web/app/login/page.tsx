@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import SetupNotice from "../SetupNotice";
 import LoginForm from "./LoginForm";
@@ -7,7 +8,9 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen flex-1 items-center justify-center bg-zinc-50 p-6 dark:bg-black">
-      <LoginForm />
+      <Suspense fallback={null}>
+        <LoginForm />
+      </Suspense>
     </main>
   );
 }

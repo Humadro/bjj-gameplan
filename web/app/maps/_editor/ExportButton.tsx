@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { getNodesBounds, getViewportForBounds, useReactFlow } from "@xyflow/react";
+import { buildGamePlanText } from "@/lib/graph/gameplan";
+import type { Position, Technique } from "@/lib/types";
 
 const MAX = 5000;
 const MARGIN = 1.15; // 15% de aire alrededor del árbol
@@ -17,9 +19,17 @@ function download(dataUrl: string, name: string) {
   a.click();
 }
 
-export default function ExportButton() {
+export default function ExportButton({
+  mapName = "Mapa",
+  positions = [],
+  techniques = [],
+}: {
+  mapName?: string;
+  positions?: Position[];
+  techniques?: Technique[];
+}) {
   const { getNodes } = useReactFlow();
-  const [busy, setBusy] = useState<null | "png" | "pdf">(null);
+  const [busy, setBusy] = useState<null | "png" | "pdf" | "lista">(null);
 
   async function render() {
     const nodes = getNodes();
@@ -76,6 +86,36 @@ export default function ExportButton() {
     }
   }
 
+  // Plan de juego como texto (lista por posición) en un PDF A4 monoespaciado.
+  async function exportLista() {
+    setBusy("lista");
+    try {
+      const text = buildGamePlanText(mapName, positions, techniques);
+      const { jsPDF } = await import("jspdf");
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      pdf.setFont("courier", "normal");
+      pdf.setFontSize(10);
+      const margin = 40;
+      const lineH = 13;
+      const maxWidth = pdf.internal.pageSize.getWidth() - margin * 2;
+      const bottom = pdf.internal.pageSize.getHeight() - margin;
+      let y = margin;
+      for (const raw of text.split("\n")) {
+        for (const line of pdf.splitTextToSize(raw || " ", maxWidth) as string[]) {
+          if (y > bottom) {
+            pdf.addPage();
+            y = margin;
+          }
+          pdf.text(line, margin, y);
+          y += lineH;
+        }
+      }
+      pdf.save(`bjj-gameplan-${new Date().toISOString().slice(0, 10)}-lista.pdf`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div className="flex gap-1">
       <button
@@ -91,6 +131,14 @@ export default function ExportButton() {
         className="rounded-md border border-black/15 bg-white px-2 py-1 text-xs shadow-sm hover:bg-black/5 disabled:opacity-60"
       >
         {busy === "pdf" ? "…" : "PDF"}
+      </button>
+      <button
+        onClick={exportLista}
+        disabled={busy !== null}
+        title="Plan de juego como lista de texto (PDF)"
+        className="rounded-md border border-black/15 bg-white px-2 py-1 text-xs shadow-sm hover:bg-black/5 disabled:opacity-60"
+      >
+        {busy === "lista" ? "…" : "Lista"}
       </button>
     </div>
   );

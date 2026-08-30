@@ -1,4 +1,6 @@
+import CommandPalette from "./CommandPalette";
 import GraphCanvas from "./GraphCanvas";
+import MapAnalysis from "./MapAnalysis";
 import MapSwitcher from "./MapSwitcher";
 import OnboardingChecklist from "./OnboardingChecklist";
 import PositionPanel from "./PositionPanel";
@@ -46,6 +48,8 @@ export default function MapView({
           hasRoutedTechnique={hasRoutedTechnique}
         />
 
+        <MapAnalysis positions={positions} techniques={techniques} />
+
         <TechniquePanel mapId={mapId} positions={positions} techniques={techniques} />
         <PositionPanel mapId={mapId} positions={positions} />
       </aside>
@@ -57,10 +61,13 @@ export default function MapView({
           <GraphCanvas
             positions={positions}
             techniques={techniques}
+            mapName={mapName}
             toolbar={<ShareButton mapId={mapId} shareSlug={shareSlug} />}
           />
         )}
       </main>
+
+      <CommandPalette mapId={mapId} positions={positions} maps={maps} />
     </div>
   );
 }

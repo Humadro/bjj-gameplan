@@ -13,6 +13,12 @@ function readCredentials(formData: FormData) {
   };
 }
 
+// Solo se permite volver a una ruta interna ("/algo"), nunca a otra web.
+function safeNext(formData: FormData) {
+  const next = String(formData.get("next") ?? "");
+  return next.startsWith("/") && !next.startsWith("//") ? next : "/maps";
+}
+
 export async function login(formData: FormData): Promise<AuthResult> {
   const { email, password } = readCredentials(formData);
   if (!email || !password) return { error: "Email y contraseña son obligatorios." };
@@ -22,7 +28,7 @@ export async function login(formData: FormData): Promise<AuthResult> {
   if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
-  redirect("/maps");
+  redirect(safeNext(formData));
 }
 
 export async function signup(formData: FormData): Promise<AuthResult> {
@@ -40,5 +46,5 @@ export async function signup(formData: FormData): Promise<AuthResult> {
   }
 
   revalidatePath("/", "layout");
-  redirect("/maps");
+  redirect(safeNext(formData));
 }

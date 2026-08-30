@@ -28,6 +28,23 @@ function bool(formData: FormData, key: string) {
   return v === "on" || v === "true" || v === "1";
 }
 
+// Campos de enlace de estudio (comunes a posiciones y técnicas). Si no hay URL,
+// se limpian también la etiqueta y el segundo de inicio.
+function refValues(formData: FormData) {
+  const url = str(formData, "reference_url");
+  if (!url || !/^https?:\/\//i.test(url)) {
+    return { reference_url: null, reference_label: null, reference_start_seconds: null };
+  }
+  const label = str(formData, "reference_label");
+  const rawStart = str(formData, "reference_start_seconds");
+  const start = rawStart ? Math.trunc(Number(rawStart)) : NaN;
+  return {
+    reference_url: url,
+    reference_label: label || null,
+    reference_start_seconds: Number.isFinite(start) && start > 0 ? start : null,
+  };
+}
+
 // RLS ya restringe `maps` al dueño: si el select devuelve fila, el mapa es suyo.
 async function ownsMap(supabase: Supa, mapId: string) {
   if (!mapId) return false;
@@ -54,7 +71,13 @@ export async function createPosition(formData: FormData): Promise<ActionResult> 
 
   const { error } = await supabase
     .from("positions")
-    .insert({ name, is_bad: bool(formData, "is_bad"), user_id: user.id, map_id: mapId });
+    .insert({
+      name,
+      is_bad: bool(formData, "is_bad"),
+      ...refValues(formData),
+      user_id: user.id,
+      map_id: mapId,
+    });
 
   if (error) {
     return {
@@ -78,7 +101,7 @@ export async function updatePosition(formData: FormData): Promise<ActionResult> 
 
   const { error } = await supabase
     .from("positions")
-    .update({ name, is_bad: bool(formData, "is_bad") })
+    .update({ name, is_bad: bool(formData, "is_bad"), ...refValues(formData) })
     .eq("id", id)
     .eq("map_id", mapId);
 
@@ -180,13 +203,27 @@ async function buildTechniqueValues(
     destinationId = dest.id === source.id ? null : dest.id;
   }
 
+  // Plan B: a dónde vas si la técnica falla. Vale también para sumisiones.
+  // Si coincide con el origen lo guardamos como null ("te quedas donde estabas").
+  const fail = await resolvePositionId(
+    supabase,
+    userId,
+    mapId,
+    str(formData, "fail_position_id"),
+    str(formData, "fail_position_new"),
+  );
+  if ("error" in fail) return { error: fail.error };
+  const failId = fail.id === source.id ? null : fail.id;
+
   return {
     values: {
       name,
       source_position_id: source.id,
       destination_position_id: destinationId,
+      fail_position_id: failId,
       confidence,
       is_submission,
+      ...refValues(formData),
     },
   };
 }

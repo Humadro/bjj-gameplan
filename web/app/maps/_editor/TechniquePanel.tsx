@@ -3,12 +3,24 @@
 import { useMemo, useRef, useState } from "react";
 import { createTechnique, deleteTechnique, updateTechnique } from "./actions";
 import { useAction } from "./useAction";
+import ReferenceFieldset from "./ReferenceFieldset";
 import { CONFIDENCE_COLOR, CONFIDENCE_LABEL, type Position, type Technique } from "@/lib/types";
 
 const inputCls =
   "rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15 dark:bg-zinc-800";
 
 const NEW = "__new__";
+
+const NEW_FIELD: Record<PositionSelectName, string> = {
+  source_position_id: "source_position_new",
+  destination_position_id: "destination_position_new",
+  fail_position_id: "fail_position_new",
+};
+
+type PositionSelectName =
+  | "source_position_id"
+  | "destination_position_id"
+  | "fail_position_id";
 
 function PositionSelect({
   label,
@@ -19,14 +31,14 @@ function PositionSelect({
   emptyLabel,
 }: {
   label: string;
-  name: "source_position_id" | "destination_position_id";
+  name: PositionSelectName;
   positions: Position[];
   defaultValue: string;
   required?: boolean;
   emptyLabel: string;
 }) {
   const [isNew, setIsNew] = useState(false);
-  const newName = name === "source_position_id" ? "source_position_new" : "destination_position_new";
+  const newName = NEW_FIELD[name];
 
   return (
     <label className="flex flex-col gap-1 text-xs text-zinc-500">
@@ -107,6 +119,17 @@ function TechniqueFields({
         />
       )}
 
+      <PositionSelect
+        label="Si fallas, acabas en… (opcional)"
+        name="fail_position_id"
+        positions={positions}
+        defaultValue={technique?.fail_position_id ?? ""}
+        emptyLabel="(sigues en la misma posición)"
+      />
+      <p className="-mt-1 text-[11px] leading-snug text-zinc-400">
+        Plan B: si esta técnica no sale, ¿a qué posición sueles ir a parar?
+      </p>
+
       <label className="flex flex-col gap-1 text-xs text-zinc-500">
         Confianza
         <select
@@ -121,6 +144,8 @@ function TechniqueFields({
           ))}
         </select>
       </label>
+
+      <ReferenceFieldset reference={technique} />
     </>
   );
 }

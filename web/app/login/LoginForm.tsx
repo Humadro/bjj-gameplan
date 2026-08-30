@@ -1,12 +1,14 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { login, signup, type AuthResult } from "./actions";
 
 export default function LoginForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<AuthResult | null>(null);
+  const next = useSearchParams().get("next") ?? "";
 
   function run(action: (fd: FormData) => Promise<AuthResult>) {
     const form = formRef.current;
@@ -31,6 +33,8 @@ export default function LoginForm() {
     >
       <h1 className="text-xl font-semibold">BJJ Game Plan</h1>
       <p className="-mt-2 text-sm text-zinc-500">Entra con tu email para ver tu mapa.</p>
+
+      <input type="hidden" name="next" value={next} />
 
       <label className="flex flex-col gap-1 text-sm">
         Email

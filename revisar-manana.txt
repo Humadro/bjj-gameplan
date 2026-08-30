@@ -1,0 +1,51 @@
+Revisar en el navegador - implementaciones nuevas sin probar
+
+PREVIO: ejecutar en Supabase SQL editor, en orden:
+  [ ] 0004_fail_route.sql
+  [ ] 0005_reference_links.sql
+  (sin ellas, crear/editar tecnicas y posiciones da error)
+
+--- Lote 1 ---
+
+[ ] Huecos en el plan: crear un mapa con >10 tecnicas y comprobar que sale la
+    tarjeta ambar. Con <=10 no debe aparecer. Verificar las 3 listas:
+    "sin escape" (posicion mala sin salida), "posicion muerta" (buena sin salida),
+    "sin plan B" (tecnica con destino y sin "si fallas").
+
+[ ] Enfocar (canvas, arriba izquierda): elegir una posicion -> se atenua todo
+    menos los caminos que llegan a ella. Boton para cambiar a "salen de aqui".
+    La X quita el enfoque. Al enfocar NO debe saltar el zoom.
+
+[ ] Ruta "si fallas": en el form de tecnica, elegir posicion en "Si fallas,
+    acabas en...". En el grafo debe salir flecha roja punteada con etiqueta
+    "si fallas". Probar tambien en una sumision. Si eliges la misma posicion de
+    origen, no se dibuja nada (correcto).
+
+--- Lote 2 ---
+
+[ ] Enlaces de estudio (tecnica y posicion): abrir "Enlace de estudio", pegar
+    un link de YouTube + segundo de inicio. En el nodo aparece 🔗; al pulsarlo
+    se abre panel lateral con el video embebido arrancando en ese segundo.
+    Probar con un link que NO sea YouTube -> debe mostrar solo "Abrir enlace".
+    Probar tambien en la vista compartida /s/<token>.
+
+[ ] Export "Lista": boton Lista en la barra de export -> descarga un PDF de
+    texto, una seccion por posicion, con confianza / destino / "si fallas".
+
+[ ] Copiar mapa compartido: abrir /s/<token> con OTRA cuenta (o sin sesion).
+    "Copiar a mi cuenta": sin sesion -> manda a login y al volver se puede
+    copiar; con sesion -> crea "Copia de X" con posiciones, tecnicas, rutas
+    "si fallas" y enlaces, y entra en el nuevo mapa.
+
+[ ] Paleta de comandos (Cmd-K / Ctrl-K):
+    - "desde media guardia > gancho > x-guard, alta" -> crea la tecnica
+    - "pos rubber guard" / "pos mount bottom mala" -> crea la posicion
+    - "ir <nombre de otro mapa>" -> navega a ese mapa
+    - texto sin ">" + Enter -> abre mini-formulario con autocompletado
+    - tras crear, la paleta sigue abierta para encadenar
+    - nombres de posicion que ya existen no deben duplicarse
+
+--- Notas ---
+[ ] Confirmar que el form de tecnica no se siente sobrecargado con el campo
+    "si fallas" + el bloque de enlace (colapsado por defecto).
+[ ] Revisar que la vista compartida sigue bien con los cambios (header, clonar).

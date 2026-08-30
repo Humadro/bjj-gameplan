@@ -2,9 +2,10 @@ import dagre from "dagre";
 import type { Edge, Node } from "@xyflow/react";
 import { MarkerType } from "@xyflow/react";
 import { CONFIDENCE_COLOR, type Position, type Technique } from "@/lib/types";
+import { getRef } from "@/lib/graph/refs";
 
-export type PositionNodeData = { label: string; isBad: boolean };
-export type TechniqueNodeData = { label: string; color: string };
+export type PositionNodeData = { label: string; isBad: boolean; hasRef: boolean };
+export type TechniqueNodeData = { label: string; color: string; hasRef: boolean };
 
 export type GraphNode = Node<PositionNodeData | TechniqueNodeData>;
 
@@ -32,7 +33,7 @@ export function buildGraph(
     nodes.push({
       id: `pos:${p.id}`,
       type: "position",
-      data: { label: p.name, isBad: p.is_bad },
+      data: { label: p.name, isBad: p.is_bad, hasRef: Boolean(getRef(p)) },
       position: { x: 0, y: 0 },
       style: { ...NODE_SIZE.position },
     });
@@ -44,7 +45,7 @@ export function buildGraph(
     nodes.push({
       id: `tech:${t.id}`,
       type: kind,
-      data: { label: t.name, color },
+      data: { label: t.name, color, hasRef: Boolean(getRef(t)) },
       position: { x: 0, y: 0 },
       style: { ...NODE_SIZE[kind] },
     });
@@ -74,6 +75,27 @@ export function buildGraph(
         target: `pos:${t.destination_position_id}`,
         style: { stroke, strokeWidth: 1.5, strokeDasharray: "6 4" },
         markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
+      });
+    }
+
+    // técnica -> posición "si fallas" (plan B): punteada roja con etiqueta.
+    // Vale también para sumisiones. Se omite si el plan B es la misma posición de origen.
+    if (
+      t.fail_position_id &&
+      t.fail_position_id !== t.source_position_id &&
+      positionById.has(t.fail_position_id)
+    ) {
+      edges.push({
+        id: `fail:${t.id}`,
+        source: `tech:${t.id}`,
+        target: `pos:${t.fail_position_id}`,
+        label: "si fallas",
+        labelBgPadding: [4, 2],
+        labelBgBorderRadius: 3,
+        labelBgStyle: { fill: "#ffffff", fillOpacity: 0.9 },
+        labelStyle: { fill: RED, fontSize: 10, fontWeight: 600 },
+        style: { stroke: RED, strokeWidth: 1.5, strokeDasharray: "1 4" },
+        markerEnd: { type: MarkerType.ArrowClosed, color: RED },
       });
     }
   }

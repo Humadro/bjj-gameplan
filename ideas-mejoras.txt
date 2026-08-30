@@ -1,0 +1,14 @@
+Ideas de mejora - BJJ Game Plan
+
+== HACER YA ==
+- Panel de estadisticas del juego: posiciones-hub, submissions mas frecuentes, % verde/rojo, profundidad media + chequeos de coherencia (ataques por zona desbalanceados, posiciones malas sin escape vs nº de sumisiones, todo marcado en verde)
+- Flag "foco de este mes": marcar 2-3 tecnicas o una posicion como foco, estrella en el canvas + vista filtrada
+
+== PENSAR MAS ==
+- Ramas por reaccion del rival ("SI hace X -> ..."): salidas multiples etiquetadas por disparo en una tecnica, UI aditiva "+ respuesta del rival", tabla technique_branches
+- Modo drill/flashcards sobre un camino: la app pregunta paso a paso y prioriza lo que fallas o esta en rojo
+- Captura rapida post-roll (<20s): con quien, que funciono, que te comieron, marca un hueco; alimenta el analisis
+- Analitica de resultados reales: % de exito por tecnica en sparring, a que sumision tocas mas, evolucion por semanas
+- Snapshots del mapa + diff en el tiempo (trimestral / pre-competicion): que anadiste, que confianzas subieron o bajaron
+- Registro de entrenamiento por tecnica ("la hice en sparring" / "la drille") que ajusta la confianza automaticamente
+- Historial de confianza en el tiempo: guardar cada cambio con fecha, sparkline por tecnica, vista de evolucion trimestral

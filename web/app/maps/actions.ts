@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import type { Position, Technique } from "@/lib/types";
 
 export type MapActionResult = { error?: string };
 
@@ -86,6 +87,85 @@ export async function setMapSharing(formData: FormData): Promise<MapActionResult
 
   revalidatePath(`/maps/${id}`);
   return {};
+}
+
+// Clona un mapa compartido (por token) en la cuenta del usuario actual.
+// Lee vía la RPC shared_map (security definer), así que no necesita RLS sobre el
+// mapa origen. Devuelve { needsAuth: true } si no hay sesión.
+export async function cloneSharedMap(
+  token: string,
+): Promise<{ error?: string; needsAuth?: boolean }> {
+  const { supabase, user } = await authed();
+  if (!user) return { needsAuth: true };
+  if (!token) return { error: "Falta el enlace." };
+
+  const { data, error: rpcError } = await supabase.rpc("shared_map", { p_token: token });
+  if (rpcError) return { error: rpcError.message };
+  if (!data) return { error: "Ese enlace ya no existe." };
+
+  const shared = data as {
+    map: { name: string };
+    positions: Position[];
+    techniques: Technique[];
+  };
+
+  const { data: newMap, error: mapError } = await supabase
+    .from("maps")
+    .insert({ name: `Copia de ${shared.map.name}`.slice(0, 80), user_id: user.id })
+    .select("id")
+    .single();
+  if (mapError || !newMap) return { error: mapError?.message ?? "No se pudo crear el mapa." };
+
+  const oldToNew = new Map<string, string>();
+  if (shared.positions.length > 0) {
+    const { data: insPos, error: posError } = await supabase
+      .from("positions")
+      .insert(
+        shared.positions.map((p) => ({
+          name: p.name,
+          is_bad: p.is_bad,
+          reference_url: p.reference_url ?? null,
+          reference_label: p.reference_label ?? null,
+          reference_start_seconds: p.reference_start_seconds ?? null,
+          user_id: user.id,
+          map_id: newMap.id,
+        })),
+      )
+      .select("id, name");
+    if (posError || !insPos) return { error: posError?.message ?? "Fallo al copiar posiciones." };
+
+    const nameToNew = new Map(insPos.map((p) => [p.name, p.id as string]));
+    for (const p of shared.positions) {
+      const nid = nameToNew.get(p.name);
+      if (nid) oldToNew.set(p.id, nid);
+    }
+  }
+
+  const rows = shared.techniques
+    .map((t) => ({
+      name: t.name,
+      source_position_id: oldToNew.get(t.source_position_id) ?? null,
+      destination_position_id: t.destination_position_id
+        ? (oldToNew.get(t.destination_position_id) ?? null)
+        : null,
+      fail_position_id: t.fail_position_id ? (oldToNew.get(t.fail_position_id) ?? null) : null,
+      confidence: t.confidence,
+      is_submission: t.is_submission,
+      reference_url: t.reference_url ?? null,
+      reference_label: t.reference_label ?? null,
+      reference_start_seconds: t.reference_start_seconds ?? null,
+      user_id: user.id,
+      map_id: newMap.id,
+    }))
+    .filter((r) => r.source_position_id);
+
+  if (rows.length > 0) {
+    const { error: techError } = await supabase.from("techniques").insert(rows);
+    if (techError) return { error: `Mapa copiado, pero fallaron las técnicas: ${techError.message}` };
+  }
+
+  revalidatePath("/maps");
+  redirect(`/maps/${newMap.id}`);
 }
 
 export async function deleteMap(formData: FormData): Promise<MapActionResult> {

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { createPosition, deletePosition, updatePosition } from "./actions";
 import { useAction } from "./useAction";
+import ReferenceFieldset from "./ReferenceFieldset";
 import type { Position } from "@/lib/types";
 
 const inputCls =
@@ -39,6 +40,7 @@ export default function PositionPanel({
           <input type="checkbox" name="is_bad" />
           Posición mala / bottom (flechas en rojo)
         </label>
+        <ReferenceFieldset />
         <button
           type="submit"
           disabled={pending}
@@ -69,6 +71,7 @@ export default function PositionPanel({
                   <input type="checkbox" name="is_bad" defaultChecked={p.is_bad} />
                   Posición mala / bottom
                 </label>
+                <ReferenceFieldset reference={p} />
                 <div className="flex gap-2">
                   <button
                     type="submit"
