@@ -26,15 +26,17 @@ There is no test suite yet.
 
 1. `cd web && npm install`
 2. Copy `.env.example` to `.env.local` and fill `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Supabase → Settings → API). Until these are set, every route renders `app/SetupNotice.tsx` instead of crashing.
-3. Apply [web/supabase/migrations/0001_init.sql](web/supabase/migrations/0001_init.sql) in the Supabase SQL editor (or `supabase db push`).
+3. Apply migrations in order ([0001_init.sql](web/supabase/migrations/0001_init.sql), [0002_maps.sql](web/supabase/migrations/0002_maps.sql)) in the Supabase SQL editor (or `supabase db push`).
 4. `npm run dev`.
 
 ## Architecture
 
-- **Auth / session:** `@supabase/ssr`. Browser client in [web/lib/supabase/client.ts](web/lib/supabase/client.ts), server client (Server Components / Actions / Route Handlers) in [web/lib/supabase/server.ts](web/lib/supabase/server.ts). [web/proxy.ts](web/proxy.ts) → `updateSession` refreshes the session cookie on every request and redirects `/map` → `/login` when signed out (and `/login` → `/map` when signed in). [web/lib/dal.ts](web/lib/dal.ts) (`requireUser`) is the single auth gate inside server code.
-- **Data flow:** `/map` (server component, [web/app/map/page.tsx](web/app/map/page.tsx)) fetches `positions` + `techniques` and passes them to client panels. All mutations are Server Actions in [web/app/map/actions.ts](web/app/map/actions.ts) — each re-checks the user, writes via the RLS-scoped Supabase client, and calls `revalidatePath("/map")`. Client components invoke them through the `useAction` hook ([web/app/map/useAction.ts](web/app/map/useAction.ts)); no client-side Supabase writes.
-- **Graph:** [web/lib/graph/layout.ts](web/lib/graph/layout.ts) `buildGraph()` is a pure function: data → React Flow nodes/edges → dagre `rankdir: "TB"` layout → positioned nodes. Positions are keyed `pos:<id>` so a hub position is one node no matter how many techniques point at it. Rendered by [web/app/map/GraphCanvas.tsx](web/app/map/GraphCanvas.tsx) with `nodesDraggable={false}` — the no-manual-layout rule is enforced here.
-- **DB schema:** two tables, `positions` and `techniques`, both with `user_id default auth.uid()` and a single `for all` RLS policy scoping every row to its owner (the techniques policy also verifies referenced positions belong to the caller). `positions.is_bad` marks a "bottom" position (drives red edges); `techniques.is_submission` marks a box node with no outgoing edge. `confidence` is `'alta' | 'media' | 'baja'`.
+- **Auth / session:** `@supabase/ssr`. Browser client in [web/lib/supabase/client.ts](web/lib/supabase/client.ts), server client (Server Components / Actions / Route Handlers) in [web/lib/supabase/server.ts](web/lib/supabase/server.ts). [web/proxy.ts](web/proxy.ts) → `updateSession` refreshes the session cookie on every request and redirects `/maps*` → `/login` when signed out (and `/login` → `/maps` when signed in). [web/lib/dal.ts](web/lib/dal.ts) (`requireUser`) is the single auth gate inside server code.
+- **Routes:** `/` redirects to `/maps`. [web/app/maps/page.tsx](web/app/maps/page.tsx) lists the user's maps (create / rename / delete via [web/app/maps/actions.ts](web/app/maps/actions.ts)). [web/app/maps/[id]/page.tsx](web/app/maps/%5Bid%5D/page.tsx) is the editor for one map — fetches that map's `positions` + `techniques` (filtered `map_id = id`) plus the map list for the switcher, and renders `MapView`.
+- **Editor:** lives in [web/app/maps/_editor/](web/app/maps/_editor/) (`_` = non-routable). `MapView` composes the sidebar (`MapSwitcher`, `OnboardingChecklist`, `TechniquePanel`, `PositionPanel`) and the canvas (`GraphCanvas`, or `SeedPanel` when the map has no positions). Mutations are Server Actions in [web/app/maps/_editor/actions.ts](web/app/maps/_editor/actions.ts): each re-checks the user, calls `ownsMap()`, writes via the RLS-scoped client, and `revalidatePath("/maps/<id>")`. Every client form carries a hidden `map_id`. Client components call actions through the `useAction` hook; no client-side Supabase writes.
+- **Onboarding:** [web/lib/seed.ts](web/lib/seed.ts) holds `SMALL_TEMPLATES` (4 themed 3-6 position starters), `FULL_TEMPLATES` (`posiciones-base`, `mapa-ejemplo` = port of `Peso/Mapa_Juego_BJJ.dot`), and `SUGGESTED_POSITIONS` (chips). `seedMap` only runs on an empty map. `OnboardingChecklist` is a 3-step card dismissed via `localStorage`.
+- **Graph:** [web/lib/graph/layout.ts](web/lib/graph/layout.ts) `buildGraph()` is a pure function: data → React Flow nodes/edges → dagre `rankdir: "TB"` layout → positioned nodes. Positions are keyed `pos:<id>` so a hub position is one node no matter how many techniques point at it. Rendered by `GraphCanvas` with `nodesDraggable={false}` — the no-manual-layout rule is enforced here.
+- **DB schema:** `maps`, `positions`, `techniques` — all with `user_id default auth.uid()` and a `for all` RLS policy scoping rows to the owner. `positions`/`techniques` also carry `map_id` (FK → `maps`, `on delete cascade`); their RLS policies additionally require the referenced map (and, for techniques, the referenced positions) to belong to the caller. Position name is unique per **map** (`positions_map_name_key`). `positions.is_bad` marks a "bottom" position (red edges); `techniques.is_submission` marks a box node with no outgoing edge. `confidence` is `'alta' | 'media' | 'baja'`. Migrations: [0001_init.sql](web/supabase/migrations/0001_init.sql) then [0002_maps.sql](web/supabase/migrations/0002_maps.sql).
 
 ## What the app is
 
@@ -55,10 +57,11 @@ The app must reproduce the visual language of the reference Graphviz file at `C:
 
 ## Data model notes
 
-- **Position:** name + `is_bad` (bottom position).
+- **Map:** a user has many; positions/techniques belong to exactly one map.
+- **Position:** name (unique per map) + `is_bad` (bottom position).
 - **Technique:** name, source position, `confidence`, optional destination position (null when `is_submission` or a dead end).
 - **Hub positions** (reached by techniques from several different places, e.g. Side Control Top) resolve to a single shared node — never duplicated per incoming technique (`pos:<id>` keying in `buildGraph`).
-- Every user sees only their own map. Enforced by Supabase RLS, not client-side filtering.
+- Every user sees only their own maps. Enforced by Supabase RLS, not client-side filtering.
 
 ## Out of MVP scope
 
