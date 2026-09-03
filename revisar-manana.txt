@@ -37,10 +37,15 @@ PREVIO: ejecutar en Supabase SQL editor, en orden:
     copiar; con sesion -> crea "Copia de X" con posiciones, tecnicas, rutas
     "si fallas" y enlaces, y entra en el nuevo mapa.
 
-[ ] Paleta de comandos (Cmd-K / Ctrl-K) -- ahora es un textarea multilinea:
-    - "desde media guardia > gancho > x-guard, alta" -> crea la tecnica
-    - CADENA: "media guardia > gancho > x-guard > single leg > side control top, alta"
-      -> crea 2 tecnicas encadenadas (partes impares: 3, 5, 7...)
+[ ] Paleta de comandos (Cmd-K / Ctrl-K) -- textarea multilinea con resaltado:
+    - las POSICIONES se ven en negrita mientras escribes, las tecnicas no
+    - "desde media guardia > gancho > x-guard" -> crea la tecnica
+    - CONFIANZA POR TECNICA: "media guardia > gancho, alta > x-guard > single leg, baja > side control top"
+      -> gancho=alta, single leg=baja (antes solo valia una al final de toda la linea)
+    - SUMISION: "desde mount top > armbar, sub" -> tecnica marcada como sumision
+      (partes pares: la ultima tecnica no lleva a ninguna posicion)
+    - autocompletado: al escribir un nombre de posicion sale un desplegable con
+      las que ya existen + canonicas; Tab completa, flechas mueven, Esc oculta
     - varias lineas a la vez (Enter crea todo, Shift+Enter salto de linea)
     - "pos rubber guard" / "pos mount bottom mala" -> crea la posicion
       (las lineas pos se procesan antes que las tecnicas)
@@ -50,6 +55,8 @@ PREVIO: ejecutar en Supabase SQL editor, en orden:
     - si una linea falla, se para ahi (lo ya creado se queda)
     - tras crear, la paleta sigue abierta
     - nombres de posicion repetidos entre lineas / dentro de una cadena no se duplican
+    - COMPROBAR: la confianza que eliges (,alta / ,baja) llega a la tecnica creada
+      (antes era el bug: se veia en texto pero la tecnica quedaba en media)
 
 --- Notas ---
 [ ] Confirmar que el form de tecnica no se siente sobrecargado con el campo

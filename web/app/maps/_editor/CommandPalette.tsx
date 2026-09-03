@@ -14,6 +14,7 @@ type TechSpec = {
   name: string;
   dest: string | null;
   confidence: Confidence;
+  isSubmission: boolean;
 };
 
 type ParsedLine =
@@ -24,11 +25,30 @@ type ParsedLine =
   | { kind: "phrase"; text: string } // texto suelto: en 1 línea abre el formulario
   | { kind: "invalid"; reason: string };
 
-const CONF_RE = /,\s*(alta|media|baja)\s*$/i;
 const SEP_RE = /\s*(?:->|→|›|>)\s*/;
 const SEP_SPLIT_RE = /(\s*(?:->|→|›|>)\s*)/; // con captura: conserva los separadores
-const CONF_TAIL_RE = /^(.*?)(\s*,\s*(?:alta|media|baja)\s*)$/i;
+// Etiqueta al final de un tramo: ", alta" / ", baja" / ", sub" / ", sumisión".
+// Se puede encadenar (", gancho, alta, sub"). No se come una coma normal del
+// nombre ("gancho, el corto") porque exige una palabra clave conocida.
+const SEG_TAG_RE = /\s*,\s*(alta|media|baja|sub|sumisi[oó]n)\s*$/i;
+const TAG_TAIL_RE = /^([\s\S]*?)((?:\s*,\s*(?:alta|media|baja|sub|sumisi[oó]n))+\s*)$/i;
 const cls = "rounded-md border border-black/15 px-2 py-1 text-sm";
+
+// Quita las etiquetas del final de un tramo y devuelve el texto limpio + qué
+// confianza / sumisión declaraban.
+function stripTags(seg: string): { text: string; conf: Confidence | null; sub: boolean } {
+  let text = seg.trim();
+  let conf: Confidence | null = null;
+  let sub = false;
+  let m: RegExpMatchArray | null;
+  while ((m = text.match(SEG_TAG_RE))) {
+    const tag = m[1].toLowerCase();
+    if (tag === "sub" || tag.startsWith("sumisi")) sub = true;
+    else conf = tag as Confidence;
+    text = text.replace(SEG_TAG_RE, "").trim();
+  }
+  return { text, conf, sub };
+}
 
 // Parsea UNA línea. El textarea de la paleta procesa cada línea por separado.
 function parseLine(raw: string, maps: MapRef[]): ParsedLine {
@@ -58,46 +78,43 @@ function parseLine(raw: string, maps: MapRef[]): ParsedLine {
   }
 
   if (SEP_RE.test(text)) {
-    let body = text;
-    let confidence: Confidence = "media";
-    const cm = body.match(CONF_RE);
-    if (cm) {
-      confidence = cm[1].toLowerCase() as Confidence;
-      body = body.replace(CONF_RE, "");
-    }
-    const segs = body.split(SEP_RE).map((s) => s.trim());
-    if (segs.length) segs[0] = segs[0].replace(/^desde\s+/i, "").trim();
+    const raw = text.split(SEP_RE);
+    raw[0] = raw[0].replace(/^desde\s+/i, "");
+    const segs = raw.map(stripTags);
 
-    if (segs.some((s) => !s)) {
+    if (segs.some((s) => !s.text)) {
       return { kind: "invalid", reason: "Hay un tramo vacío en la cadena" };
     }
+    if (segs.length < 2) {
+      return { kind: "invalid", reason: "Falta el nombre de la técnica" };
+    }
 
-    // 2 partes: A › técnica            (técnica sin destino)
-    // 3 partes: A › técnica › B        (una técnica)
-    // impar ≥ 5: A › t1 › B › t2 › C…  (cadena: N técnicas encadenadas)
-    if (segs.length === 2) {
-      return {
-        kind: "techniques",
-        specs: [{ source: segs[0], name: segs[1], dest: null, confidence }],
-      };
+    // Partes alternas: posición › técnica › posición › técnica …
+    //   nº impar (3, 5, 7…): cada técnica lleva a una posición
+    //   nº par   (2, 4, 6…): la última técnica no lleva a ninguna (sin salida
+    //                        o sumisión si la marcas con ", sub")
+    // La confianza es por técnica (", alta" tras su nombre). Una etiqueta en la
+    // posición final vale de defecto para las técnicas sin etiqueta propia.
+    const evenChain = segs.length % 2 === 0;
+    const lineConf: Confidence =
+      (!evenChain && segs[segs.length - 1].conf) || "media";
+
+    const specs: TechSpec[] = [];
+    const k = Math.floor(segs.length / 2);
+    for (let i = 0; i < k; i++) {
+      const src = segs[2 * i];
+      const tech = segs[2 * i + 1];
+      const isLast = i === k - 1;
+      const destSeg = evenChain && isLast ? null : segs[2 * i + 2];
+      specs.push({
+        source: src.text,
+        name: tech.text,
+        dest: destSeg ? destSeg.text : null,
+        confidence: tech.conf ?? lineConf,
+        isSubmission: !destSeg && tech.sub,
+      });
     }
-    if (segs.length === 3) {
-      return {
-        kind: "techniques",
-        specs: [{ source: segs[0], name: segs[1], dest: segs[2], confidence }],
-      };
-    }
-    if (segs.length >= 5 && segs.length % 2 === 1) {
-      const specs: TechSpec[] = [];
-      for (let i = 0; i + 2 < segs.length; i += 2) {
-        specs.push({ source: segs[i], name: segs[i + 1], dest: segs[i + 2], confidence });
-      }
-      return { kind: "techniques", specs };
-    }
-    return {
-      kind: "invalid",
-      reason: "Una cadena alterna posición › técnica › posición… (nº impar de partes: 3, 5, 7…)",
-    };
+    return { kind: "techniques", specs };
   }
 
   return { kind: "phrase", text };
@@ -115,14 +132,20 @@ function describe(p: ParsedLine): { icon: string; text: string; bad?: boolean } 
       return { icon: "⚠", text: p.reason, bad: true };
     case "techniques": {
       const s = p.specs;
+      const tail = (x: TechSpec) =>
+        x.isSubmission ? "sumisión" : (x.dest ?? "(sin destino)");
       if (s.length === 1) {
         return {
-          icon: "•",
-          text: `${s[0].source} → ${s[0].name} → ${s[0].dest ?? "(sin destino)"} · ${s[0].confidence}`,
+          icon: s[0].isSubmission ? "◻" : "•",
+          text: `${s[0].source} → ${s[0].name} → ${tail(s[0])} · ${s[0].confidence}`,
         };
       }
-      const chain = [s[0].source, ...s.flatMap((x) => [x.name, x.dest ?? "—"])].join(" → ");
-      return { icon: "⛓", text: `cadena (${s.length}): ${chain} · ${s[0].confidence}` };
+      const parts = [s[0].source];
+      for (const x of s) {
+        parts.push(`${x.name}·${x.confidence}`);
+        parts.push(tail(x));
+      }
+      return { icon: "⛓", text: `cadena (${s.length}): ${parts.join(" → ")}` };
     }
     default:
       return { icon: "", text: "" };
@@ -131,7 +154,7 @@ function describe(p: ParsedLine): { icon: string; text: string; bad?: boolean } 
 
 // ---- Resaltado en vivo: posiciones en negrita, técnicas normales ----------
 
-type Tok = { text: string; bold?: boolean };
+type Tok = { text: string; bold?: boolean; muted?: boolean };
 
 // "desde X" -> "desde " normal, "X" en negrita. Sin "desde": espacios sueltos
 // normales, el resto en negrita (es un nombre de posición).
@@ -154,14 +177,6 @@ function lineTokens(line: string): Tok[] {
 
   if (SEP_RE.test(line)) {
     const parts = line.split(SEP_SPLIT_RE);
-    const contentCount = Math.ceil(parts.length / 2);
-    const roleOf = (idx: number): "pos" | "tech" | "plain" => {
-      if (contentCount === 2) return idx === 0 ? "pos" : "tech";
-      if (contentCount === 3) return idx === 1 ? "tech" : "pos";
-      if (contentCount >= 5 && contentCount % 2 === 1) return idx % 2 === 0 ? "pos" : "tech";
-      return "plain";
-    };
-
     const toks: Tok[] = [];
     let ci = 0;
     for (let i = 0; i < parts.length; i++) {
@@ -171,18 +186,16 @@ function lineTokens(line: string): Tok[] {
       }
       let chunk = parts[i];
       let tail = "";
-      if (i === parts.length - 1) {
-        const cm = chunk.match(CONF_TAIL_RE);
-        if (cm) {
-          chunk = cm[1];
-          tail = cm[2];
-        }
+      const cm = chunk.match(TAG_TAIL_RE);
+      if (cm) {
+        chunk = cm[1];
+        tail = cm[2];
       }
-      const role = roleOf(ci);
-      if (role === "pos" && ci === 0) toks.push(...posTokens(chunk));
-      else if (role === "pos") toks.push({ text: chunk, bold: true });
+      const isPos = ci % 2 === 0; // par = posición, impar = técnica
+      if (isPos && ci === 0) toks.push(...posTokens(chunk));
+      else if (isPos) toks.push({ text: chunk, bold: true });
       else toks.push({ text: chunk });
-      if (tail) toks.push({ text: tail });
+      if (tail) toks.push({ text: tail, muted: true });
       ci++;
     }
     return toks;
@@ -203,7 +216,9 @@ function Highlighted({ text }: { text: string }) {
                 {t.text}
               </strong>
             ) : (
-              <span key={j}>{t.text}</span>
+              <span key={j} className={t.muted ? "text-zinc-400" : undefined}>
+                {t.text}
+              </span>
             ),
           )}
           {i < lines.length - 1 ? "\n" : ""}
@@ -211,6 +226,53 @@ function Highlighted({ text }: { text: string }) {
       ))}
     </>
   );
+}
+
+// ---- Autocompletado de posiciones dentro del textarea --------------------
+
+const SEP_G_RE = /\s*(?:->|→|›|>)\s*/g;
+
+// Dado el texto y la posición del cursor, ¿estamos escribiendo el nombre de una
+// posición? Si sí, devuelve el rango [nameStart, nameEnd) a reemplazar y el
+// fragmento ya escrito. null = no sugerir (línea `pos`/`ir`, tramo de técnica…).
+function activeSlot(
+  text: string,
+  caret: number,
+): { nameStart: number; nameEnd: number; frag: string } | null {
+  const lineStart = text.lastIndexOf("\n", Math.max(0, caret - 1)) + 1;
+  const nlAfter = text.indexOf("\n", caret);
+  const lineEnd = nlAfter === -1 ? text.length : nlAfter;
+  const line = text.slice(lineStart, lineEnd);
+  const cil = caret - lineStart;
+
+  if (/^\s*(?:\+?pos|posici[oó]n|ir)\b/i.test(line)) return null;
+
+  const before = line.slice(0, cil);
+  const after = line.slice(cil);
+  const seps = [...before.matchAll(SEP_G_RE)];
+  if (seps.length % 2 === 1) return null; // tramo impar = técnica, no posición
+
+  const fragStart = seps.length
+    ? seps[seps.length - 1].index! + seps[seps.length - 1][0].length
+    : 0;
+  const am = after.match(/\s*(?:->|→|›|>)\s*/);
+  const fragEnd = am ? cil + am.index! : line.length;
+
+  const rawSlot = line.slice(fragStart, fragEnd);
+  let nameOffset = rawSlot.length - rawSlot.trimStart().length;
+  if (seps.length === 0) {
+    const dm = rawSlot.slice(nameOffset).match(/^desde\s+/i);
+    if (dm) nameOffset += dm[0].length;
+  }
+  const namePart = rawSlot.slice(nameOffset);
+  const tm = namePart.match(TAG_TAIL_RE);
+  const nameEndTrim = (tm ? tm[1] : namePart).replace(/\s+$/, "").length;
+
+  return {
+    nameStart: lineStart + fragStart + nameOffset,
+    nameEnd: lineStart + fragStart + nameOffset + nameEndTrim,
+    frag: namePart.slice(0, nameEndTrim).trim(),
+  };
 }
 
 export default function CommandPalette({
@@ -229,6 +291,9 @@ export default function CommandPalette({
   const [flash, setFlash] = useState<string | null>(null);
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [caret, setCaret] = useState(0);
+  const [sugIdx, setSugIdx] = useState(0);
+  const [sugDismissed, setSugDismissed] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -265,6 +330,51 @@ export default function CommandPalette({
         .map((raw) => ({ raw, parsed: parseLine(raw, maps) })),
     [text, maps],
   );
+
+  // Nombres de posición para autocompletar: las del mapa primero, luego el
+  // vocabulario canónico, sin repetir (sin distinguir mayúsculas).
+  const posNames = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    const add = (name: string) => {
+      const k = name.toLowerCase();
+      if (!seen.has(k)) {
+        seen.add(k);
+        out.push(name);
+      }
+    };
+    for (const p of positions) add(p.name);
+    for (const c of CANONICAL_POSITIONS) add(c.name);
+    return out;
+  }, [positions]);
+
+  const slot = useMemo(() => activeSlot(text, caret), [text, caret]);
+  const suggestions = useMemo(() => {
+    if (!slot || slot.frag.length < 1) return [];
+    const f = slot.frag.toLowerCase();
+    if (posNames.some((n) => n.toLowerCase() === f)) return [];
+    const starts = posNames.filter((n) => n.toLowerCase().startsWith(f));
+    const rest = posNames.filter(
+      (n) => !n.toLowerCase().startsWith(f) && n.toLowerCase().includes(f),
+    );
+    return [...starts, ...rest].slice(0, 6);
+  }, [slot, posNames]);
+  const showSug = suggestions.length > 0 && !sugDismissed;
+
+  function applySuggestion(name: string) {
+    if (!slot) return;
+    const pos = slot.nameStart + name.length;
+    setText(text.slice(0, slot.nameStart) + name + text.slice(slot.nameEnd));
+    setSugIdx(0);
+    setSugDismissed(false);
+    setTimeout(() => {
+      const el = taRef.current;
+      if (!el) return;
+      el.focus();
+      el.selectionStart = el.selectionEnd = pos;
+      setCaret(pos);
+    }, 0);
+  }
 
   function setPos(fd: FormData, field: "source" | "destination", name: string) {
     const id = posByName.get(name.toLowerCase());
@@ -355,8 +465,9 @@ export default function CommandPalette({
           fd.set("map_id", mapId);
           fd.set("name", spec.name);
           fd.set("confidence", spec.confidence);
+          if (spec.isSubmission) fd.set("is_submission", "on");
           setPos(fd, "source", spec.source);
-          if (spec.dest) setPos(fd, "destination", spec.dest);
+          if (spec.dest && !spec.isSubmission) setPos(fd, "destination", spec.dest);
           else fd.set("destination_position_id", "");
           const res = await createTechnique(fd);
           if (res?.error) {
@@ -416,20 +527,71 @@ export default function CommandPalette({
                 }}
                 onChange={(e) => {
                   setText(e.currentTarget.value);
+                  setCaret(e.currentTarget.selectionStart ?? 0);
+                  setSugIdx(0);
+                  setSugDismissed(false);
                   setFlash(null);
                   setErrMsg(null);
                 }}
+                onSelect={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
                 onKeyDown={(e) => {
+                  if (showSug) {
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setSugIdx((i) => (i + 1) % suggestions.length);
+                      return;
+                    }
+                    if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setSugIdx((i) => (i - 1 + suggestions.length) % suggestions.length);
+                      return;
+                    }
+                    if (e.key === "Tab") {
+                      e.preventDefault();
+                      applySuggestion(suggestions[sugIdx] ?? suggestions[0]);
+                      return;
+                    }
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSugDismissed(true);
+                      return;
+                    }
+                  }
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     runAll();
                   }
                 }}
                 placeholder={
-                  "desde media guardia > gancho > x-guard > single leg > side control top, alta\npos rubber guard mala"
+                  "desde media guardia > gancho, alta > x-guard > single leg, media > side control top\ndesde mount top > armbar, sub, alta\npos rubber guard mala"
                 }
                 className="relative block w-full resize-y rounded-md border border-black/15 bg-transparent px-3 py-2 font-mono text-[13px] leading-relaxed text-transparent caret-zinc-900 placeholder:text-zinc-400"
               />
+
+              {showSug && (
+                <ul className="absolute left-0 top-full z-10 mt-1 w-full max-w-xs overflow-hidden rounded-md border border-black/15 bg-white text-xs shadow-lg">
+                  {suggestions.map((s, i) => (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          applySuggestion(s);
+                        }}
+                        className={`block w-full px-2 py-1 text-left ${
+                          i === sugIdx ? "bg-zinc-900 text-white" : "hover:bg-black/5"
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    </li>
+                  ))}
+                  <li className="border-t border-black/10 px-2 py-1 text-[10px] text-zinc-400">
+                    ↹ Tab completa · ↑↓ mueve · Esc oculta
+                  </li>
+                </ul>
+              )}
             </div>
 
             {entries.length > 0 ? (
@@ -461,8 +623,9 @@ export default function CommandPalette({
 
             <div className="mt-2 flex items-center justify-between gap-2">
               <p className="text-[11px] leading-relaxed text-zinc-400">
-                técnica: <code>desde X &gt; nombre &gt; Y, alta</code> · cadena:{" "}
-                <code>A &gt; t1 &gt; B &gt; t2 &gt; C</code> · posición:{" "}
+                técnica: <code>desde X &gt; nombre &gt; Y</code> · confianza/sumisión por
+                técnica: <code>&gt; nombre, alta</code> / <code>&gt; nombre, sub</code> ·
+                cadena: <code>A &gt; t1 &gt; B &gt; t2 &gt; C</code> · posición:{" "}
                 <code>pos nombre [mala]</code> · mapa: <code>ir nombre</code>
               </p>
               <button
