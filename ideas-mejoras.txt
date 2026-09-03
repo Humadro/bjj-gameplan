@@ -8,7 +8,8 @@ Ideas de mejora - BJJ Game Plan
 == PENSAR MAS ==
 - Orden dentro de una posicion (campo priority 1a/2a/3a opcion): mas alla de la confianza, decir cual pruebas primero; se muestra en las aristas
 - Etiqueta de tipo de tecnica (pase/barrida/escape/derribo/control/transicion/sumision): habilita balances "12 pases y 2 retenciones de guardia" y filtros. Para muchas se puede autoclasificar por posicion inicial+final sin pedirselo al usuario; solo preguntar en las ambiguas
-- "Estudiar el mapa" (si no entra ya): recorrido secuencial de cada tecnica con enlace, embebiendo su video en el segundo marcado, uno tras otro, como sesion de repaso
+- "Estudiar el mapa": recorrido secuencial de cada tecnica con enlace, embebiendo su video en el segundo marcado, uno tras otro, como sesion de repaso (playlist)
+- Ficha visual por posicion: exportar el subarbol de una posicion como PNG/PDF (ahora la ficha es solo texto A5)
 - Ramas por reaccion del rival ("SI hace X -> ..."): salidas multiples etiquetadas por disparo en una tecnica, UI aditiva "+ respuesta del rival", tabla technique_branches
 - Modo drill/flashcards sobre un camino: la app pregunta paso a paso y prioriza lo que fallas o esta en rojo
 - Captura rapida post-roll (<20s): con quien, que funciono, que te comieron, marca un hueco; alimenta el analisis

@@ -104,7 +104,7 @@ function PositionSelect({
   );
 }
 
-function TechniqueFields({
+export function TechniqueFields({
   positions,
   technique,
 }: {

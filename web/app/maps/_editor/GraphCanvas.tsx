@@ -20,6 +20,7 @@ import { getRef, youtubeEmbedUrl, type RefInfo } from "@/lib/graph/refs";
 import type { Position, Technique } from "@/lib/types";
 import ExportButton from "./ExportButton";
 import GraphLegend from "./GraphLegend";
+import NodeInspector from "./NodeInspector";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1, border: "none" } as const;
 
@@ -180,7 +181,8 @@ export default function GraphCanvas({
   // Si se pasa, se atenúa todo lo que no esté en el set (filtro del mapa).
   highlightIds?: Set<string> | null;
 }) {
-  void mapId; // usado por el inspector de nodos (siguiente iteración)
+  // Nodo abierto en el inspector (editar/borrar). Solo si el mapa es editable.
+  const [inspect, setInspect] = useState<{ kind: "pos" | "tech"; id: string } | null>(null);
   // Enfoque: resaltar los caminos que llegan a (o salen de) una posición, o la
   // "vía principal" (siempre la técnica de más confianza).
   const [focusId, setFocusId] = useState("");
@@ -297,6 +299,17 @@ export default function GraphCanvas({
     }
   }
 
+  function onNodeClick(node: Node) {
+    const [kind, id] = node.id.split(":");
+    // Mapa editable -> inspector (editar/borrar). Vista compartida -> solo ref.
+    if (mapId && (kind === "pos" || kind === "tech")) {
+      setSelectedRef(null);
+      setInspect({ kind, id });
+    } else {
+      openRefFor(node);
+    }
+  }
+
   if (nodes.length === 0) {
     return (
       <div className="flex h-full items-center justify-center bg-white px-6 text-center text-sm text-zinc-500">
@@ -319,7 +332,7 @@ export default function GraphCanvas({
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
-      onNodeClick={(_, node) => openRefFor(node)}
+      onNodeClick={(_, node) => onNodeClick(node)}
       proOptions={{ hideAttribution: true }}
       style={{ background: "#ffffff" }}
     >
@@ -383,6 +396,16 @@ export default function GraphCanvas({
       </Panel>
       {selectedRef && (
         <RefDrawer selected={selectedRef} onClose={() => setSelectedRef(null)} />
+      )}
+      {inspect && mapId && (
+        <NodeInspector
+          target={inspect}
+          mapId={mapId}
+          mapName={mapName}
+          positions={positions}
+          techniques={techniques}
+          onClose={() => setInspect(null)}
+        />
       )}
     </ReactFlow>
   );

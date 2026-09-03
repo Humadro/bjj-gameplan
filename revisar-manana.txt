@@ -58,7 +58,32 @@ PREVIO: ejecutar en Supabase SQL editor, en orden:
     - COMPROBAR: la confianza que eliges (,alta / ,baja) llega a la tecnica creada
       (antes era el bug: se veia en texto pero la tecnica quedaba en media)
 
+--- Lote 3 (viz + editor, sin migraciones) ---
+
+[ ] Leyenda del canvas: chip "❔ Leyenda" abajo-izq del panel Enfocar; al abrir
+    explica colores/lineas/formas.
+[ ] Enfocar -> el boton ahora cicla: llegan aqui / salen de aqui / via principal.
+    "via principal" resalta la linea de mas confianza saliendo de esa posicion.
+[ ] Plegar posiciones: boton -/+N en la bola. Al plegar se ocultan sus tecnicas
+    de salida (y lo que quede huerfano). "desplegar todo (N)" en el panel Enfocar.
+    El zoom NO debe saltar al plegar/enfocar.
+[ ] Filtro del mapa (barra lateral, bajo el switcher): texto + chips alta/media/
+    baja + 🔗 + ◻. Atenua el canvas a lo que encaja y recorta las dos listas.
+    "limpiar ✕" lo quita.
+[ ] Seleccion multiple de tecnicas: boton "Seleccionar…" -> checkboxes + barra
+    para cambiar confianza de varias o borrarlas de golpe.
+[ ] Borrar tecnica/posicion -> sale toast "Deshacer" (abajo-dcha). Deshacer
+    restaura la fila (y las tecnicas de salida + los enlaces destino/plan B si
+    era una posicion). Los errores tambien salen como toast.
+[ ] Click en un nodo del mapa (editable) -> panel lateral "inspector" para
+    editar o borrar esa tecnica/posicion sin bajar a la lista. En posiciones,
+    boton "Ficha PDF" (A5, texto, esa posicion y sus salidas).
+[ ] Vista compartida /s/<token>: al hacer click en un nodo sigue abriendo solo
+    el enlace de estudio (no el inspector). Sin toasts.
+[ ] `npm test` en web/ pasa (40 tests del nucleo puro).
+
 --- Notas ---
 [ ] Confirmar que el form de tecnica no se siente sobrecargado con el campo
     "si fallas" + el bloque de enlace (colapsado por defecto).
 [ ] Revisar que la vista compartida sigue bien con los cambios (header, clonar).
+[ ] Que la barra lateral no se sienta recargada con el filtro nuevo.
