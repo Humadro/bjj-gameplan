@@ -37,13 +37,19 @@ PREVIO: ejecutar en Supabase SQL editor, en orden:
     copiar; con sesion -> crea "Copia de X" con posiciones, tecnicas, rutas
     "si fallas" y enlaces, y entra en el nuevo mapa.
 
-[ ] Paleta de comandos (Cmd-K / Ctrl-K):
+[ ] Paleta de comandos (Cmd-K / Ctrl-K) -- ahora es un textarea multilinea:
     - "desde media guardia > gancho > x-guard, alta" -> crea la tecnica
+    - CADENA: "media guardia > gancho > x-guard > single leg > side control top, alta"
+      -> crea 2 tecnicas encadenadas (partes impares: 3, 5, 7...)
+    - varias lineas a la vez (Enter crea todo, Shift+Enter salto de linea)
     - "pos rubber guard" / "pos mount bottom mala" -> crea la posicion
-    - "ir <nombre de otro mapa>" -> navega a ese mapa
-    - texto sin ">" + Enter -> abre mini-formulario con autocompletado
-    - tras crear, la paleta sigue abierta para encadenar
-    - nombres de posicion que ya existen no deben duplicarse
+      (las lineas pos se procesan antes que las tecnicas)
+    - "ir <nombre de otro mapa>" -> navega (solo si es la unica linea)
+    - preview por linea antes de Enter; lineas mal formadas en rojo
+    - texto sin ">" (1 linea) + Enter -> mini-formulario con autocompletado
+    - si una linea falla, se para ahi (lo ya creado se queda)
+    - tras crear, la paleta sigue abierta
+    - nombres de posicion repetidos entre lineas / dentro de una cadena no se duplican
 
 --- Notas ---
 [ ] Confirmar que el form de tecnica no se siente sobrecargado con el campo

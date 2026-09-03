@@ -8,20 +8,28 @@ import type { Confidence, Position } from "@/lib/types";
 
 type MapRef = { id: string; name: string };
 
-type Parsed =
+// Una técnica concreta a crear (un tramo de una cadena, o una técnica suelta).
+type TechSpec = {
+  source: string;
+  name: string;
+  dest: string | null;
+  confidence: Confidence;
+};
+
+type ParsedLine =
   | { kind: "empty" }
-  | { kind: "technique"; source: string; name: string; dest: string | null; confidence: Confidence }
   | { kind: "position"; name: string; isBad: boolean }
+  | { kind: "techniques"; specs: TechSpec[] }
   | { kind: "goto"; map: MapRef }
-  | { kind: "unknown" };
+  | { kind: "phrase"; text: string } // texto suelto: en 1 línea abre el formulario
+  | { kind: "invalid"; reason: string };
 
 const CONF_RE = /,\s*(alta|media|baja)\s*$/i;
-const SEP_RE = /\s*(?:->|→|>)\s*/;
+const SEP_RE = /\s*(?:->|→|›|>)\s*/;
 const cls = "rounded-md border border-black/15 px-2 py-1 text-sm";
 
-// Parseo de texto libre de la paleta. Si no encaja en nada, "unknown" -> el
-// Enter abre el formulario rápido con lo que se haya entendido.
-function parseCommand(raw: string, maps: MapRef[]): Parsed {
+// Parsea UNA línea. El textarea de la paleta procesa cada línea por separado.
+function parseLine(raw: string, maps: MapRef[]): ParsedLine {
   const text = raw.trim();
   if (!text) return { kind: "empty" };
 
@@ -29,7 +37,9 @@ function parseCommand(raw: string, maps: MapRef[]): Parsed {
   if (goto) {
     const q = goto[1].trim().toLowerCase();
     const m = maps.find((x) => x.name.toLowerCase().includes(q));
-    return m ? { kind: "goto", map: m } : { kind: "unknown" };
+    return m
+      ? { kind: "goto", map: m }
+      : { kind: "invalid", reason: `Ningún mapa contiene «${goto[1].trim()}»` };
   }
 
   const pos = text.match(/^(?:\+?pos|posici[oó]n)\s+(.+)$/i);
@@ -40,7 +50,9 @@ function parseCommand(raw: string, maps: MapRef[]): Parsed {
       isBad = true;
       name = name.replace(/\bmala\b/i, "").replace(/!+$/, "").trim();
     }
-    return name ? { kind: "position", name, isBad } : { kind: "unknown" };
+    return name
+      ? { kind: "position", name, isBad }
+      : { kind: "invalid", reason: "Falta el nombre de la posición" };
   }
 
   if (SEP_RE.test(text)) {
@@ -51,28 +63,67 @@ function parseCommand(raw: string, maps: MapRef[]): Parsed {
       confidence = cm[1].toLowerCase() as Confidence;
       body = body.replace(CONF_RE, "");
     }
-    const segs = body.split(SEP_RE).map((s) => s.trim()).filter(Boolean);
-    const source = segs[0]?.replace(/^desde\s+/i, "").trim();
-    if (source && segs[1]) {
-      return { kind: "technique", source, name: segs[1], dest: segs[2] ?? null, confidence };
+    const segs = body.split(SEP_RE).map((s) => s.trim());
+    if (segs.length) segs[0] = segs[0].replace(/^desde\s+/i, "").trim();
+
+    if (segs.some((s) => !s)) {
+      return { kind: "invalid", reason: "Hay un tramo vacío en la cadena" };
     }
+
+    // 2 partes: A › técnica            (técnica sin destino)
+    // 3 partes: A › técnica › B        (una técnica)
+    // impar ≥ 5: A › t1 › B › t2 › C…  (cadena: N técnicas encadenadas)
+    if (segs.length === 2) {
+      return {
+        kind: "techniques",
+        specs: [{ source: segs[0], name: segs[1], dest: null, confidence }],
+      };
+    }
+    if (segs.length === 3) {
+      return {
+        kind: "techniques",
+        specs: [{ source: segs[0], name: segs[1], dest: segs[2], confidence }],
+      };
+    }
+    if (segs.length >= 5 && segs.length % 2 === 1) {
+      const specs: TechSpec[] = [];
+      for (let i = 0; i + 2 < segs.length; i += 2) {
+        specs.push({ source: segs[i], name: segs[i + 1], dest: segs[i + 2], confidence });
+      }
+      return { kind: "techniques", specs };
+    }
+    return {
+      kind: "invalid",
+      reason: "Una cadena alterna posición › técnica › posición… (nº impar de partes: 3, 5, 7…)",
+    };
   }
 
-  return { kind: "unknown" };
+  return { kind: "phrase", text };
 }
 
-function hint(p: Parsed, hasText: boolean): string {
+function describe(p: ParsedLine): { icon: string; text: string; bad?: boolean } {
   switch (p.kind) {
-    case "empty":
-      return "Escribe una técnica, una posición o «ir <mapa>». Esc para cerrar.";
-    case "technique":
-      return `Técnica «${p.name}»: ${p.source} → ${p.dest ?? "(sin destino)"} · ${p.confidence}`;
     case "position":
-      return `Posición «${p.name}»${p.isBad ? " (mala)" : ""}`;
+      return { icon: "＋", text: `posición «${p.name}»${p.isBad ? " (mala)" : ""}` };
     case "goto":
-      return `Ir al mapa «${p.map.name}»`;
+      return { icon: "→", text: `ir al mapa «${p.map.name}»` };
+    case "phrase":
+      return { icon: "?", text: `«${p.text}» · Enter abre el formulario` };
+    case "invalid":
+      return { icon: "⚠", text: p.reason, bad: true };
+    case "techniques": {
+      const s = p.specs;
+      if (s.length === 1) {
+        return {
+          icon: "•",
+          text: `${s[0].source} → ${s[0].name} → ${s[0].dest ?? "(sin destino)"} · ${s[0].confidence}`,
+        };
+      }
+      const chain = [s[0].source, ...s.flatMap((x) => [x.name, x.dest ?? "—"])].join(" → ");
+      return { icon: "⛓", text: `cadena (${s.length}): ${chain} · ${s[0].confidence}` };
+    }
     default:
-      return hasText ? "Enter abre el formulario con lo escrito" : "";
+      return { icon: "", text: "" };
   }
 }
 
@@ -92,7 +143,7 @@ export default function CommandPalette({
   const [flash, setFlash] = useState<string | null>(null);
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -109,14 +160,23 @@ export default function CommandPalette({
 
   useEffect(() => {
     if (!open) return;
-    const id = window.setTimeout(() => inputRef.current?.focus(), 0);
+    const id = window.setTimeout(() => taRef.current?.focus(), 0);
     return () => window.clearTimeout(id);
   }, [open]);
 
-  const parsed = useMemo(() => parseCommand(text, maps), [text, maps]);
   const posByName = useMemo(
     () => new Map(positions.map((p) => [p.name.toLowerCase(), p.id])),
     [positions],
+  );
+
+  const entries = useMemo(
+    () =>
+      text
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((raw) => ({ raw, parsed: parseLine(raw, maps) })),
+    [text, maps],
   );
 
   function setPos(fd: FormData, field: "source" | "destination", name: string) {
@@ -129,12 +189,8 @@ export default function CommandPalette({
     }
   }
 
-  function addTechnique(
-    source: string,
-    name: string,
-    dest: string | null,
-    confidence: Confidence,
-  ) {
+  // Alta de una técnica suelta desde el formulario rápido.
+  function addTechnique(source: string, name: string, dest: string | null, confidence: Confidence) {
     const fd = new FormData();
     fd.set("map_id", mapId);
     fd.set("name", name);
@@ -151,43 +207,95 @@ export default function CommandPalette({
         setFlash(`✓ ${name}`);
         setText("");
         setMode("text");
-        inputRef.current?.focus();
+        taRef.current?.focus();
       }
     });
   }
 
-  function addPosition(name: string, isBad: boolean) {
-    const fd = new FormData();
-    fd.set("map_id", mapId);
-    fd.set("name", name);
-    if (isBad) fd.set("is_bad", "on");
+  // Procesa TODAS las líneas del textarea: posiciones primero (para respetar el
+  // flag "mala"), luego técnicas/cadenas en orden. Para a la primera que falle.
+  function runAll() {
+    if (entries.length === 0) return;
+
+    if (entries.length === 1 && entries[0].parsed.kind === "goto") {
+      setOpen(false);
+      router.push(`/maps/${entries[0].parsed.map.id}`);
+      return;
+    }
+    if (entries.length === 1 && entries[0].parsed.kind === "phrase") {
+      setMode("form");
+      return;
+    }
+
+    const problems = entries.filter(
+      (e) =>
+        e.parsed.kind === "invalid" ||
+        e.parsed.kind === "phrase" ||
+        (entries.length > 1 && e.parsed.kind === "goto"),
+    );
+    if (problems.length) {
+      setErrMsg(`Revisa: ${problems.map((e) => `«${e.raw}»`).join(" · ")}`);
+      return;
+    }
+
     startTransition(async () => {
       setErrMsg(null);
-      const res = await createPosition(fd);
-      if (res?.error) {
-        setErrMsg(res.error);
-      } else {
-        setFlash(`✓ ${name}`);
-        setText("");
-        inputRef.current?.focus();
-      }
-    });
-  }
+      let techCount = 0;
+      let posCount = 0;
+      const madePos = new Set<string>();
 
-  function onEnter() {
-    if (parsed.kind === "technique") {
-      addTechnique(parsed.source, parsed.name, parsed.dest, parsed.confidence);
-    } else if (parsed.kind === "position") {
-      addPosition(parsed.name, parsed.isBad);
-    } else if (parsed.kind === "goto") {
-      setOpen(false);
-      router.push(`/maps/${parsed.map.id}`);
-    } else if (text.trim()) {
-      setMode("form");
-    }
+      for (const e of entries) {
+        if (e.parsed.kind !== "position") continue;
+        const key = e.parsed.name.toLowerCase();
+        if (madePos.has(key) || posByName.has(key)) continue;
+        const fd = new FormData();
+        fd.set("map_id", mapId);
+        fd.set("name", e.parsed.name);
+        if (e.parsed.isBad) fd.set("is_bad", "on");
+        const res = await createPosition(fd);
+        if (res?.error && !/ya hay una posici/i.test(res.error)) {
+          setErrMsg(`«${e.raw}»: ${res.error}`);
+          return;
+        }
+        madePos.add(key);
+        posCount++;
+      }
+
+      for (const e of entries) {
+        if (e.parsed.kind !== "techniques") continue;
+        for (const spec of e.parsed.specs) {
+          const fd = new FormData();
+          fd.set("map_id", mapId);
+          fd.set("name", spec.name);
+          fd.set("confidence", spec.confidence);
+          setPos(fd, "source", spec.source);
+          if (spec.dest) setPos(fd, "destination", spec.dest);
+          else fd.set("destination_position_id", "");
+          const res = await createTechnique(fd);
+          if (res?.error) {
+            setErrMsg(
+              `«${spec.name}» (${spec.source} → ${spec.dest ?? "—"}): ${res.error}`,
+            );
+            return;
+          }
+          techCount++;
+        }
+      }
+
+      const parts: string[] = [];
+      if (techCount) parts.push(`${techCount} técnica${techCount === 1 ? "" : "s"}`);
+      if (posCount) parts.push(`${posCount} posición${posCount === 1 ? "" : "es"}`);
+      setFlash(`✓ ${parts.join(" · ") || "nada que crear"}`);
+      setText("");
+      setMode("text");
+      taRef.current?.focus();
+    });
   }
 
   if (!open) return null;
+
+  const rows = Math.min(10, Math.max(3, text.split("\n").length));
+  const hasProblem = entries.some((e) => e.parsed.kind === "invalid");
 
   return (
     <div
@@ -200,39 +308,77 @@ export default function CommandPalette({
       >
         {mode === "text" ? (
           <>
-            <input
-              ref={inputRef}
+            <textarea
+              ref={taRef}
               value={text}
+              rows={rows}
               onChange={(e) => {
                 setText(e.currentTarget.value);
                 setFlash(null);
                 setErrMsg(null);
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  onEnter();
+                  runAll();
                 }
               }}
-              placeholder="desde media guardia > gancho > x-guard, alta"
-              className="w-full rounded-md border border-black/15 px-3 py-2 text-sm"
+              placeholder={
+                "desde media guardia > gancho > x-guard > single leg > side control top, alta\npos rubber guard mala"
+              }
+              className="w-full resize-y rounded-md border border-black/15 px-3 py-2 font-mono text-[13px] leading-relaxed"
             />
-            <p className="mt-2 text-xs text-zinc-500">{hint(parsed, Boolean(text.trim()))}</p>
+
+            {entries.length > 0 ? (
+              <ul className="mt-2 flex flex-col gap-0.5 text-xs">
+                {entries.slice(0, 12).map((e, i) => {
+                  const d = describe(e.parsed);
+                  return (
+                    <li
+                      key={i}
+                      className={d.bad ? "text-red-600" : "text-zinc-600"}
+                    >
+                      <span className="mr-1 text-zinc-400">{d.icon}</span>
+                      {d.text}
+                    </li>
+                  );
+                })}
+                {entries.length > 12 && (
+                  <li className="text-zinc-400">+{entries.length - 12} más…</li>
+                )}
+              </ul>
+            ) : (
+              <p className="mt-2 text-xs text-zinc-500">
+                Una línea por técnica, posición o cadena. Enter crea todo · Shift+Enter salto de línea · Esc cierra.
+              </p>
+            )}
+
             {errMsg && <p className="mt-1 text-xs text-red-600">{errMsg}</p>}
             {flash && <p className="mt-1 text-xs text-green-700">{flash}</p>}
-            <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
-              técnica: <code>desde X &gt; nombre &gt; Y, alta</code> · posición:{" "}
-              <code>pos nombre</code> / <code>pos nombre mala</code> · otro mapa:{" "}
-              <code>ir nombre</code>
-            </p>
+
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <p className="text-[11px] leading-relaxed text-zinc-400">
+                técnica: <code>desde X &gt; nombre &gt; Y, alta</code> · cadena:{" "}
+                <code>A &gt; t1 &gt; B &gt; t2 &gt; C</code> · posición:{" "}
+                <code>pos nombre [mala]</code> · mapa: <code>ir nombre</code>
+              </p>
+              <button
+                type="button"
+                onClick={runAll}
+                disabled={pending || entries.length === 0 || hasProblem}
+                className="shrink-0 rounded-md bg-zinc-900 px-3 py-1 text-xs text-white disabled:opacity-50"
+              >
+                {pending ? "Creando…" : "Crear"}
+              </button>
+            </div>
           </>
         ) : (
           <QuickForm
             positions={positions}
-            initialName={parsed.kind === "technique" ? parsed.name : text.trim()}
-            initialSource={parsed.kind === "technique" ? parsed.source : ""}
-            initialDest={parsed.kind === "technique" ? (parsed.dest ?? "") : ""}
-            initialConfidence={parsed.kind === "technique" ? parsed.confidence : "media"}
+            initialName={text.trim()}
+            initialSource=""
+            initialDest=""
+            initialConfidence="media"
             pending={pending}
             error={errMsg}
             onCancel={() => {
