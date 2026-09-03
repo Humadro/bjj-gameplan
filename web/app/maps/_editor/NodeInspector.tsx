@@ -6,6 +6,7 @@ import { useAction } from "./useAction";
 import { useToast } from "./Toast";
 import { TechniqueFields } from "./TechniquePanel";
 import ReferenceFieldset from "./ReferenceFieldset";
+import NoteField from "./NoteField";
 import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
 import { buildPositionCardText } from "@/lib/graph/gameplan";
 import type { Position, Technique } from "@/lib/types";
@@ -97,6 +98,7 @@ export default function NodeInspector({
             Posición mala / bottom
           </label>
           <ReferenceFieldset reference={position} />
+          <NoteField note={position.note} />
           {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex flex-wrap gap-2">
             <button

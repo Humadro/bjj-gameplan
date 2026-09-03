@@ -76,7 +76,20 @@
     boton "Ficha PDF" (A5, texto, esa posicion y sus salidas).
 [ ] Vista compartida /s/<token>: al hacer click en un nodo sigue abriendo solo
     el enlace de estudio (no el inspector). Sin toasts.
-[ ] `npm test` en web/ pasa (40 tests del nucleo puro).
+[ ] `npm test` en web/ pasa (43 tests del nucleo puro).
+
+--- Lote 4 (notas personales) ---
+
+PREVIO: ejecutar en Supabase SQL editor 0006_notes.sql (anade la columna `note`
+        y reescribe shared_map para que NO exponga las notas).
+
+[ ] En el inspector de un nodo (y en editar posicion/tecnica de la barra lateral)
+    hay un bloque plegable "Nota personal (opcional)". Escribir una nota, guardar.
+[ ] El nodo con nota muestra un badge 📝 arriba-izquierda (el 🔗 sigue arriba-dcha).
+[ ] Editar la tecnica/posicion por otra via (p.ej. cambiar confianza en lote,
+    o el "si fallas") NO borra la nota.
+[ ] Vista compartida /s/<token>: las notas NO aparecen y NO llegan en el JSON.
+    Clonar un mapa compartido: la copia no trae notas.
 
 --- Notas ---
 [ ] Confirmar que el form de tecnica no se siente sobrecargado con el campo

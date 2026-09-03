@@ -37,6 +37,22 @@ describe("buildGraph", () => {
     expect(selfPlanB.edges.some((e) => e.id === "fail:2")).toBe(false);
   });
 
+  it("flags hasNote on nodes whose row has a non-blank note", () => {
+    const positions = [pos("a", "A"), pos("b", "B")];
+    positions[0].note = "subir el codo";
+    positions[1].note = "   ";
+    const techniques = [
+      tech("1", "a", { destination_position_id: "b", note: "me pilló David" }),
+      tech("2", "a", { destination_position_id: "b" }),
+    ];
+    const { nodes } = buildGraph(positions, techniques);
+    const data = (id: string) => nodes.find((n) => n.id === id)!.data as { hasNote: boolean };
+    expect(data("pos:a").hasNote).toBe(true);
+    expect(data("pos:b").hasNote).toBe(false); // solo espacios
+    expect(data("tech:1").hasNote).toBe(true);
+    expect(data("tech:2").hasNote).toBe(false);
+  });
+
   it("submission technique gets no destination edge", () => {
     const positions = [pos("a", "A")];
     const { edges } = buildGraph(positions, [tech("1", "a", { is_submission: true })]);

@@ -13,6 +13,7 @@ import { useAction } from "./useAction";
 import { useToast } from "./Toast";
 import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
 import ReferenceFieldset from "./ReferenceFieldset";
+import NoteField from "./NoteField";
 import type { Position, Technique } from "@/lib/types";
 
 const inputCls =
@@ -116,6 +117,7 @@ export default function PositionPanel({
           Posición mala / bottom (flechas en rojo)
         </label>
         <ReferenceFieldset />
+        <NoteField />
         <button
           type="submit"
           disabled={pending}
@@ -169,6 +171,7 @@ export default function PositionPanel({
                   Posición mala / bottom
                 </label>
                 <ReferenceFieldset reference={p} />
+                <NoteField note={p.note} />
                 <div className="flex gap-2">
                   <button
                     type="submit"

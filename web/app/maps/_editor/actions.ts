@@ -45,6 +45,15 @@ function refValues(formData: FormData) {
   };
 }
 
+// Nota personal. Solo se toca la columna si el form trae el campo `note` (los
+// edits desde la lista y el inspector lo incluyen); un submit sin él la deja
+// como estaba.
+function noteValue(formData: FormData): { note?: string | null } {
+  if (!formData.has("note")) return {};
+  const note = str(formData, "note");
+  return { note: note || null };
+}
+
 // RLS ya restringe `maps` al dueño: si el select devuelve fila, el mapa es suyo.
 async function ownsMap(supabase: Supa, mapId: string) {
   if (!mapId) return false;
@@ -75,6 +84,7 @@ export async function createPosition(formData: FormData): Promise<ActionResult> 
       name,
       is_bad: bool(formData, "is_bad"),
       ...refValues(formData),
+      ...noteValue(formData),
       user_id: user.id,
       map_id: mapId,
     });
@@ -134,7 +144,7 @@ export async function updatePosition(formData: FormData): Promise<ActionResult> 
 
   const { error } = await supabase
     .from("positions")
-    .update({ name, is_bad: bool(formData, "is_bad"), ...refValues(formData) })
+    .update({ name, is_bad: bool(formData, "is_bad"), ...refValues(formData), ...noteValue(formData) })
     .eq("id", id)
     .eq("map_id", mapId);
 
@@ -270,6 +280,7 @@ async function buildTechniqueValues(
       confidence,
       is_submission,
       ...refValues(formData),
+      ...noteValue(formData),
     },
   };
 }
@@ -391,6 +402,7 @@ export async function restoreRows(
         id: p.id,
         name: p.name,
         is_bad: p.is_bad,
+        note: p.note,
         reference_url: p.reference_url,
         reference_label: p.reference_label,
         reference_start_seconds: p.reference_start_seconds,
@@ -411,6 +423,7 @@ export async function restoreRows(
         fail_position_id: t.fail_position_id,
         confidence: t.confidence,
         is_submission: t.is_submission,
+        note: t.note,
         reference_url: t.reference_url,
         reference_label: t.reference_label,
         reference_start_seconds: t.reference_start_seconds,

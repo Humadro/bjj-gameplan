@@ -13,6 +13,7 @@ import { useAction } from "./useAction";
 import { useToast } from "./Toast";
 import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
 import ReferenceFieldset from "./ReferenceFieldset";
+import NoteField from "./NoteField";
 import { CANONICAL_POSITIONS } from "@/lib/seed";
 import {
   CONFIDENCE_COLOR,
@@ -179,6 +180,7 @@ export function TechniqueFields({
       </label>
 
       <ReferenceFieldset reference={technique} />
+      <NoteField note={technique?.note} />
     </>
   );
 }

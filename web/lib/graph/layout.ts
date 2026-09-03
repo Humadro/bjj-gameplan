@@ -4,8 +4,10 @@ import { MarkerType } from "@xyflow/react";
 import { CONFIDENCE_COLOR, type Position, type Technique } from "@/lib/types";
 import { getRef } from "@/lib/graph/refs";
 
-export type PositionNodeData = { label: string; isBad: boolean; hasRef: boolean };
-export type TechniqueNodeData = { label: string; color: string; hasRef: boolean };
+export type PositionNodeData = { label: string; isBad: boolean; hasRef: boolean; hasNote: boolean };
+export type TechniqueNodeData = { label: string; color: string; hasRef: boolean; hasNote: boolean };
+
+const hasNote = (row: { note?: string | null }) => Boolean(row.note && row.note.trim());
 
 export type GraphNode = Node<PositionNodeData | TechniqueNodeData>;
 
@@ -47,7 +49,7 @@ export function buildGraph(
     nodes.push({
       id: `pos:${p.id}`,
       type: "position",
-      data: { label: p.name, isBad: p.is_bad, hasRef: Boolean(getRef(p)) },
+      data: { label: p.name, isBad: p.is_bad, hasRef: Boolean(getRef(p)), hasNote: hasNote(p) },
       position: { x: 0, y: 0 },
       style: { ...NODE_SIZE.position },
     });
@@ -59,7 +61,7 @@ export function buildGraph(
     nodes.push({
       id: `tech:${t.id}`,
       type: kind,
-      data: { label: t.name, color, hasRef: Boolean(getRef(t)) },
+      data: { label: t.name, color, hasRef: Boolean(getRef(t)), hasNote: hasNote(t) },
       position: { x: 0, y: 0 },
       style: { ...NODE_SIZE[kind] },
     });

@@ -42,6 +42,17 @@ function RefBadge() {
   );
 }
 
+function NoteBadge() {
+  return (
+    <span
+      className="absolute -left-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] shadow ring-1 ring-black/10"
+      title="Tiene una nota personal"
+    >
+      📝
+    </span>
+  );
+}
+
 function PositionNode({ data }: NodeProps) {
   const d = data as PositionNodeData & CollapseInfo;
   const collapsed = (d.hiddenCount ?? 0) > 0;
@@ -61,6 +72,7 @@ function PositionNode({ data }: NodeProps) {
       <Handle type="target" position={HandlePosition.Top} style={HANDLE_STYLE} />
       <span className="line-clamp-4 px-1">{d.label}</span>
       {d.hasRef && <RefBadge />}
+      {d.hasNote && <NoteBadge />}
       {collapsible && d.onToggleCollapse && (
         <button
           onClick={(e) => {
@@ -90,6 +102,7 @@ function TechniqueNode({ data }: NodeProps) {
       <Handle type="target" position={HandlePosition.Top} style={HANDLE_STYLE} />
       {d.label}
       {d.hasRef && <RefBadge />}
+      {d.hasNote && <NoteBadge />}
       <Handle type="source" position={HandlePosition.Bottom} style={HANDLE_STYLE} />
     </div>
   );
@@ -107,6 +120,7 @@ function SubmissionNode({ data }: NodeProps) {
       <Handle type="target" position={HandlePosition.Top} style={HANDLE_STYLE} />
       {d.label}
       {d.hasRef && <RefBadge />}
+      {d.hasNote && <NoteBadge />}
       <Handle type="source" position={HandlePosition.Bottom} style={HANDLE_STYLE} />
     </div>
   );

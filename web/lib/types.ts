@@ -14,6 +14,8 @@ export type Position = {
   name: string;
   is_bad: boolean;
   created_at: string;
+  // Nota personal del dueño. Privada: no se expone en la vista compartida.
+  note: string | null;
 } & ReferenceFields;
 
 export type Technique = {
@@ -28,6 +30,8 @@ export type Technique = {
   confidence: Confidence;
   is_submission: boolean;
   created_at: string;
+  // Nota personal del dueño. Privada: no se expone en la vista compartida.
+  note: string | null;
 } & ReferenceFields;
 
 export const CONFIDENCE_LABEL: Record<Confidence, string> = {

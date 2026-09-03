@@ -1,19 +1,44 @@
 Ideas de mejora - BJJ Game Plan
 
+
 == HACER YA ==
+
 - Panel de estadisticas del juego: posiciones-hub, submissions mas frecuentes, % verde/rojo, profundidad media + chequeos de coherencia (ataques por zona desbalanceados, posiciones malas sin escape vs nº de sumisiones, todo marcado en verde)
 - Flag "foco de este mes": marcar 2-3 tecnicas o una posicion como foco, estrella en el canvas + vista filtrada
-- Vista de entrenador con comentarios: compartir un mapa para que alguien (coach) comente sobre posiciones/tecnicas concretas. Solo comentar, no editar. Hilo por nodo, resolver comentario.
+- Vista de entrenador con comentarios: compartir un mapa para que alguien (coach) comente sobre posiciones/tecnicas concretas. Solo comentar, no editar. Hilo por nodo, resolver comentario. (relacionado con el bloque COMUNIDAD / COMPARTIR de abajo)
+- Panel "arreglame" accionable: convertir el analisis de huecos (hoy pasivo, tarjeta ambar) en una lista clicable -> sin plan B, sin escape, baja confianza sin enlace de estudio, posiciones sin usar. Click salta al nodo y abre el inspector. Barato, reusa analyzeMap + NodeInspector. (comparacion: "My issues" de Linear)
+- Movil: que la app sea usable en el gimnasio desde el movil (es la prioridad de uso real). Canvas navegable a dedo, paneles y ⌘K en pantalla pequena, layout responsive. Hoy el foco es el producto de PC.
+
 
 == PENSAR MAS ==
+
 - Orden dentro de una posicion (campo priority 1a/2a/3a opcion): mas alla de la confianza, decir cual pruebas primero; se muestra en las aristas
 - Etiqueta de tipo de tecnica (pase/barrida/escape/derribo/control/transicion/sumision): habilita balances "12 pases y 2 retenciones de guardia" y filtros. Para muchas se puede autoclasificar por posicion inicial+final sin pedirselo al usuario; solo preguntar en las ambiguas
-- "Estudiar el mapa": recorrido secuencial de cada tecnica con enlace, embebiendo su video en el segundo marcado, uno tras otro, como sesion de repaso (playlist)
 - Ficha visual por posicion: exportar el subarbol de una posicion como PNG/PDF (ahora la ficha es solo texto A5)
 - Ramas por reaccion del rival ("SI hace X -> ..."): salidas multiples etiquetadas por disparo en una tecnica, UI aditiva "+ respuesta del rival", tabla technique_branches
-- Modo drill/flashcards sobre un camino: la app pregunta paso a paso y prioriza lo que fallas o esta en rojo
-- Captura rapida post-roll (<20s): con quien, que funciono, que te comieron, marca un hueco; alimenta el analisis
-- Analitica de resultados reales: % de exito por tecnica en sparring, a que sumision tocas mas, evolucion por semanas
-- Snapshots del mapa + diff en el tiempo (trimestral / pre-competicion): que anadiste, que confianzas subieron o bajaron
-- Registro de entrenamiento por tecnica ("la hice en sparring" / "la drille") que ajusta la confianza automaticamente
-- Historial de confianza en el tiempo: guardar cada cambio con fecha, sparkline por tecnica, vista de evolucion trimestral
+- Vistas guardadas: guardar una combinacion filtro + enfoque + plegado con un nombre ("Juego de competicion", "Lo que fallo") y cambiar entre ellas en un clic. UI minima, mucho confort. (comparacion: saved views de Notion/Linear)
+- Modo texto de todo el mapa: un panel que serializa el mapa ENTERO a texto con la misma sintaxis de ⌘K (una linea por posicion y por tecnica). Editas libremente -> "aplicar" hace el diff y aplica solo esos cambios. Igual que editar un diagrama Mermaid por su source. Sirve para edicion en bloque, diffs y pegar un plan de un LLM. Coste: serializar + parsear + diff fiable (renombrar vs borrar+crear). PENDIENTE de que el usuario confirme el alcance.
+- Modo presentacion / recorrido: pantalla completa, paso a paso por cada posicion con pan/zoom automatico, para dar clase o repasar antes de competir. Sin video (eso es "Estudiar el mapa" del bloque APRENDIZAJE). (comparacion: presentation mode de XMind)
+- Explorador de lineas tipo repertorio: eliges una posicion inicial y ves el outline plegable de TODAS las lineas con profundidad y confianza, como lista, no como grafo. "Mi repertorio desde De la Riva". (comparacion: opening explorer de Lichess)
+- Clips propios por tecnica: adjuntar/enlazar un clip de TI pegandola en sparring, no solo un instruccional. Prueba social + auto-analisis. Necesita Supabase Storage. (comparacion: Hudl / OnForm)
+
+
+  --- Bloque APRENDIZAJE (estudiar / entrenar / trackear progreso) ---
+
+  - Repaso espaciado (algoritmo tipo SM-2 de Anki): un planificador que cada dia saca N tecnicas caducadas o de baja confianza; "aprobar / fallar" ajusta la confianza y la proxima fecha de repaso. Distinto del modo drill: esto es el CALENDARIO. BUENA IDEA.
+  - Estado de aprendizaje: marcar cada tecnica como aprendida / aprendiendo / lista de deseos (ortogonal a la confianza, que es "como de bien" no "si ya la tienes"). Las de deseos se dibujan en fantasma; panel "cola de aprendizaje". (comparacion: skill tree de Duolingo)
+  - Grosor de arista por uso / modo Sankey: el ancho de la flecha = frecuencia real (del registro de entrenamiento) o confianza. Ves por donde fluye tu juego de verdad. (comparacion: diagramas Sankey de r/bjj, Lichess)
+  - Calendario de actividad / heatmap: cuando tocaste o repasaste cada zona del mapa por ultima vez. Motiva y saca a la luz ramas abandonadas. (comparacion: grafico de contribuciones de GitHub, heatmap de Anki)
+  - "Estudiar el mapa": recorrido secuencial de cada tecnica con enlace, embebiendo su video en el segundo marcado, uno tras otro, como sesion de repaso (playlist)
+  - Modo drill/flashcards sobre un camino: la app pregunta paso a paso y prioriza lo que fallas o esta en rojo
+  - Captura rapida post-roll (<20s): con quien, que funciono, que te comieron, marca un hueco; alimenta el analisis
+  - Analitica de resultados reales: % de exito por tecnica en sparring, a que sumision tocas mas, evolucion por semanas
+  - Registro de entrenamiento por tecnica ("la hice en sparring" / "la drille") que ajusta la confianza automaticamente
+  - Historial de confianza en el tiempo: guardar cada cambio con fecha, sparkline por tecnica, vista de evolucion trimestral
+  - Snapshots del mapa + diff en el tiempo (trimestral / pre-competicion): que anadiste, que confianzas subieron o bajaron
+
+
+  --- Bloque COMUNIDAD / COMPARTIR ---
+
+  - Galeria publica + fork: publicar tu mapa (opt-in) a una galeria navegable por cinturon/estilo y forkear el de otro. Hoy compartir es solo enlace 1-a-1 (mas el clon). BUENA IDEA. (comparacion: bjjtree.com, CodePen, Thingiverse)
+  - (ver tambien en HACER YA: "Vista de entrenador con comentarios")
