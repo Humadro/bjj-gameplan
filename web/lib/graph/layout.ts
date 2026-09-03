@@ -29,7 +29,18 @@ export function buildGraph(
   const edges: Edge[] = [];
   const positionById = new Map(positions.map((p) => [p.id, p]));
 
+  // Solo se dibuja la bola de una posición si alguna técnica la usa (origen,
+  // destino o plan B). Las posiciones "aparcadas" —creadas solo para tener el
+  // nombre estandarizado en los selects— no ensucian el mapa.
+  const linked = new Set<string>();
+  for (const t of techniques) {
+    linked.add(t.source_position_id);
+    if (!t.is_submission && t.destination_position_id) linked.add(t.destination_position_id);
+    if (t.fail_position_id) linked.add(t.fail_position_id);
+  }
+
   for (const p of positions) {
+    if (!linked.has(p.id)) continue;
     nodes.push({
       id: `pos:${p.id}`,
       type: "position",

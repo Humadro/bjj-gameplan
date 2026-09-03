@@ -164,6 +164,12 @@ export default function GraphCanvas({
   // Enlace de estudio abierto en el panel lateral.
   const [selectedRef, setSelectedRef] = useState<SelectedRef | null>(null);
 
+  // Solo las posiciones que están en el mapa (las aparcadas no se pueden enfocar).
+  const focusablePositions = useMemo(() => {
+    const drawn = new Set(nodes.map((n) => n.id));
+    return positions.filter((p) => drawn.has(`pos:${p.id}`));
+  }, [nodes, positions]);
+
   const view = useMemo(() => {
     const root = `pos:${focusId}`;
     if (!focusId || !nodes.some((n) => n.id === root)) return { nodes, edges };
@@ -195,8 +201,10 @@ export default function GraphCanvas({
 
   if (nodes.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center bg-white text-sm text-zinc-500">
-        Añade tu primera posición para empezar a construir el mapa.
+      <div className="flex h-full items-center justify-center bg-white px-6 text-center text-sm text-zinc-500">
+        {positions.length === 0
+          ? "Añade tu primera posición para empezar a construir el mapa."
+          : "Ninguna posición está vinculada todavía. Crea una técnica que salga de una posición para que aparezca en el mapa."}
       </div>
     );
   }
@@ -231,7 +239,7 @@ export default function GraphCanvas({
           className="max-w-[10rem] rounded border border-black/15 px-1 py-0.5"
         >
           <option value="">(todo)</option>
-          {positions.map((p) => (
+          {focusablePositions.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
             </option>
