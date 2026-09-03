@@ -1,12 +1,26 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { createTechnique, deleteTechnique, updateTechnique } from "./actions";
+import {
+  bulkDeleteTechniques,
+  bulkSetConfidence,
+  createTechnique,
+  deleteTechnique,
+  restoreRows,
+  updateTechnique,
+} from "./actions";
 import { useAction } from "./useAction";
+import { useToast } from "./Toast";
 import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
 import ReferenceFieldset from "./ReferenceFieldset";
 import { CANONICAL_POSITIONS } from "@/lib/seed";
-import { CONFIDENCE_COLOR, CONFIDENCE_LABEL, type Position, type Technique } from "@/lib/types";
+import {
+  CONFIDENCE_COLOR,
+  CONFIDENCE_LABEL,
+  type Confidence,
+  type Position,
+  type Technique,
+} from "@/lib/types";
 
 const inputCls =
   "rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15 dark:bg-zinc-800";
@@ -173,18 +187,78 @@ export default function TechniquePanel({
   mapId,
   positions,
   techniques,
+  matchTechIds = null,
 }: {
   mapId: string;
   positions: Position[];
   techniques: Technique[];
+  matchTechIds?: Set<string> | null;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const { pending, error, run } = useAction();
+  const toast = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
   const posName = useMemo(
     () => new Map(positions.map((p) => [p.id, p.name])),
     [positions],
   );
+  const shown = matchTechIds
+    ? techniques.filter((t) => matchTechIds.has(t.id))
+    : techniques;
+
+  function togglePick(id: string) {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function endSelect() {
+    setSelecting(false);
+    setPicked(new Set());
+  }
+
+  function removeTechnique(t: Technique) {
+    const fd = new FormData();
+    fd.set("id", t.id);
+    fd.set("map_id", mapId);
+    run(deleteTechnique, fd, () => {
+      toast({
+        message: `Borrada «${t.name}»`,
+        action: {
+          label: "Deshacer",
+          onClick: () => run(() => restoreRows(mapId, { techniques: [t] }), new FormData()),
+        },
+      });
+    });
+  }
+
+  function bulkConf(confidence: Confidence) {
+    const ids = [...picked];
+    run(() => bulkSetConfidence(mapId, ids, confidence), new FormData(), () => {
+      toast(`${ids.length} técnica(s) a confianza ${confidence}`);
+      endSelect();
+    });
+  }
+
+  function bulkRemove() {
+    const ids = [...picked];
+    const rows = techniques.filter((t) => picked.has(t.id));
+    run(() => bulkDeleteTechniques(mapId, ids), new FormData(), () => {
+      endSelect();
+      toast({
+        message: `Borradas ${ids.length} técnica(s)`,
+        action: {
+          label: "Deshacer",
+          onClick: () => run(() => restoreRows(mapId, { techniques: rows }), new FormData()),
+        },
+      });
+    });
+  }
 
   return (
     <section className="flex flex-col gap-3">
@@ -213,8 +287,53 @@ export default function TechniquePanel({
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
+      {techniques.length > 1 && (
+        <div className="flex flex-wrap items-center gap-1 text-xs">
+          {!selecting ? (
+            <button
+              type="button"
+              onClick={() => setSelecting(true)}
+              className="rounded border border-black/15 px-2 py-0.5 hover:bg-black/5"
+            >
+              Seleccionar…
+            </button>
+          ) : (
+            <>
+              <span className="text-zinc-500">{picked.size} elegidas ·</span>
+              {(["alta", "media", "baja"] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  disabled={pending || picked.size === 0}
+                  onClick={() => bulkConf(c)}
+                  className="rounded border border-black/15 px-1.5 py-0.5 hover:bg-black/5 disabled:opacity-50"
+                  style={{ color: CONFIDENCE_COLOR[c] }}
+                >
+                  {CONFIDENCE_LABEL[c]}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={pending || picked.size === 0}
+                onClick={bulkRemove}
+                className="rounded border border-red-300 px-1.5 py-0.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                Borrar
+              </button>
+              <button
+                type="button"
+                onClick={endSelect}
+                className="rounded border border-black/15 px-1.5 py-0.5 hover:bg-black/5"
+              >
+                Salir
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       <ul className="flex flex-col gap-1">
-        {techniques.map((t) =>
+        {shown.map((t) =>
           editingId === t.id ? (
             <li key={t.id} className="rounded-md border border-black/10 p-2 dark:border-white/10">
               <form
@@ -251,7 +370,15 @@ export default function TechniquePanel({
               key={t.id}
               className="flex items-center justify-between gap-2 rounded-md border border-black/10 px-2 py-1 text-sm dark:border-white/10"
             >
-              <span className="min-w-0">
+              {selecting && (
+                <input
+                  type="checkbox"
+                  checked={picked.has(t.id)}
+                  onChange={() => togglePick(t.id)}
+                  className="shrink-0"
+                />
+              )}
+              <span className="min-w-0 flex-1">
                 <span style={{ color: CONFIDENCE_COLOR[t.confidence] }}>{t.name}</span>
                 <span className="block truncate text-xs text-zinc-500">
                   {posName.get(t.source_position_id) ?? "?"}
@@ -263,28 +390,27 @@ export default function TechniquePanel({
                       : "—"}
                 </span>
               </span>
-              <span className="flex shrink-0 gap-2 text-xs">
-                <button onClick={() => setEditingId(t.id)} className="text-zinc-500 hover:underline">
-                  editar
-                </button>
-                <button
-                  onClick={() => {
-                    if (!confirm(`¿Borrar la técnica "${t.name}"?`)) return;
-                    const fd = new FormData();
-                    fd.set("id", t.id);
-                    fd.set("map_id", mapId);
-                    run(deleteTechnique, fd);
-                  }}
-                  className="text-red-600 hover:underline"
-                >
-                  borrar
-                </button>
-              </span>
+              {!selecting && (
+                <span className="flex shrink-0 gap-2 text-xs">
+                  <button onClick={() => setEditingId(t.id)} className="text-zinc-500 hover:underline">
+                    editar
+                  </button>
+                  <button
+                    onClick={() => removeTechnique(t)}
+                    className="text-red-600 hover:underline"
+                  >
+                    borrar
+                  </button>
+                </span>
+              )}
             </li>
           ),
         )}
         {techniques.length === 0 && (
           <li className="text-xs text-zinc-500">Todavía no hay técnicas.</li>
+        )}
+        {techniques.length > 0 && shown.length === 0 && (
+          <li className="text-xs text-zinc-500">Ninguna técnica encaja con el filtro.</li>
         )}
       </ul>
     </section>

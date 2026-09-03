@@ -9,6 +9,7 @@ import {
   Panel,
   Position as HandlePosition,
   ReactFlow,
+  type Edge,
   type Node,
   type NodeProps,
 } from "@xyflow/react";
@@ -168,12 +169,18 @@ export default function GraphCanvas({
   techniques,
   toolbar,
   mapName = "Mapa",
+  mapId,
+  highlightIds = null,
 }: {
   positions: Position[];
   techniques: Technique[];
   toolbar?: ReactNode;
   mapName?: string;
+  mapId?: string;
+  // Si se pasa, se atenúa todo lo que no esté en el set (filtro del mapa).
+  highlightIds?: Set<string> | null;
 }) {
+  void mapId; // usado por el inspector de nodos (siguiente iteración)
   // Enfoque: resaltar los caminos que llegan a (o salen de) una posición, o la
   // "vía principal" (siempre la técnica de más confianza).
   const [focusId, setFocusId] = useState("");
@@ -242,6 +249,23 @@ export default function GraphCanvas({
   }, [nodes, positions]);
 
   const view = useMemo(() => {
+    // El filtro del mapa manda: si está activo, atenúa lo que no encaja y no
+    // se aplica el enfoque.
+    if (highlightIds) {
+      const keptEdge = (e: Edge) =>
+        highlightIds.has(e.source) && highlightIds.has(e.target);
+      return {
+        nodes: nodes.map((n) =>
+          highlightIds.has(n.id) ? n : { ...n, style: { ...n.style, opacity: 0.1 } },
+        ),
+        edges: edges.map((e) =>
+          keptEdge(e)
+            ? { ...e, style: { ...e.style, opacity: 1 } }
+            : { ...e, style: { ...e.style, opacity: 0.06 } },
+        ),
+      };
+    }
+
     const root = `pos:${focusId}`;
     if (!focusId || !nodes.some((n) => n.id === root)) return { nodes, edges };
     const { nodeIds, edgeIds } =
@@ -258,7 +282,7 @@ export default function GraphCanvas({
           : { ...e, style: { ...e.style, opacity: 0.07 } },
       ),
     };
-  }, [nodes, edges, focusId, dir, positions, techniques]);
+  }, [nodes, edges, focusId, dir, positions, techniques, highlightIds]);
 
   function openRefFor(node: Node) {
     const [kind, id] = node.id.split(":");

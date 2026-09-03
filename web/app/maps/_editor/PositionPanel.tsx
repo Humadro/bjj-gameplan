@@ -5,12 +5,15 @@ import {
   addStandardPositions,
   createPosition,
   deletePosition,
+  relinkTechniques,
+  restoreRows,
   updatePosition,
 } from "./actions";
 import { useAction } from "./useAction";
+import { useToast } from "./Toast";
 import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
 import ReferenceFieldset from "./ReferenceFieldset";
-import type { Position } from "@/lib/types";
+import type { Position, Technique } from "@/lib/types";
 
 const inputCls =
   "rounded-md border border-black/15 px-2 py-1 text-sm dark:border-white/15 dark:bg-zinc-800";
@@ -18,14 +21,63 @@ const inputCls =
 export default function PositionPanel({
   mapId,
   positions,
+  techniques = [],
+  matchPosIds = null,
 }: {
   mapId: string;
   positions: Position[];
+  techniques?: Technique[];
+  matchPosIds?: Set<string> | null;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const { pending, error, run } = useAction();
+  const toast = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [stdDone, setStdDone] = useState(false);
+
+  const shown = matchPosIds ? positions.filter((p) => matchPosIds.has(p.id)) : positions;
+
+  function removePosition(p: Position) {
+    // Captura lo que el ON DELETE CASCADE / SET NULL se va a llevar, para deshacer.
+    const outgoing = techniques.filter((t) => t.source_position_id === p.id);
+    const incoming = techniques.filter(
+      (t) => t.destination_position_id === p.id || t.fail_position_id === p.id,
+    );
+    const count = outgoing.length;
+    const fd = new FormData();
+    fd.set("id", p.id);
+    fd.set("map_id", mapId);
+    run(deletePosition, fd, () => {
+      toast({
+        message:
+          count > 0
+            ? `Borrada «${p.name}» y ${count} técnica(s)`
+            : `Borrada «${p.name}»`,
+        action: {
+          label: "Deshacer",
+          onClick: () => {
+            run(
+              () =>
+                restoreRows(mapId, { positions: [p], techniques: outgoing }).then((r) =>
+                  r.error
+                    ? r
+                    : relinkTechniques(
+                        mapId,
+                        incoming.map((t) => ({
+                          id: t.id,
+                          destination_position_id:
+                            t.destination_position_id === p.id ? p.id : undefined,
+                          fail_position_id: t.fail_position_id === p.id ? p.id : undefined,
+                        })),
+                      ),
+                ),
+              new FormData(),
+            );
+          },
+        },
+      });
+    });
+  }
 
   function addStandard() {
     const fd = new FormData();
@@ -92,7 +144,7 @@ export default function PositionPanel({
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       <ul className="flex flex-col gap-1">
-        {positions.map((p) =>
+        {shown.map((p) =>
           editingId === p.id ? (
             <li key={p.id} className="rounded-md border border-black/10 p-2 dark:border-white/10">
               <form
@@ -148,10 +200,7 @@ export default function PositionPanel({
                 <button
                   onClick={() => {
                     if (!confirm(`¿Borrar "${p.name}" y sus técnicas de salida?`)) return;
-                    const fd = new FormData();
-                    fd.set("id", p.id);
-                    fd.set("map_id", mapId);
-                    run(deletePosition, fd);
+                    removePosition(p);
                   }}
                   className="text-red-600 hover:underline"
                 >
@@ -163,6 +212,9 @@ export default function PositionPanel({
         )}
         {positions.length === 0 && (
           <li className="text-xs text-zinc-500">Todavía no hay posiciones.</li>
+        )}
+        {positions.length > 0 && shown.length === 0 && (
+          <li className="text-xs text-zinc-500">Ninguna posición encaja con el filtro.</li>
         )}
       </ul>
     </section>

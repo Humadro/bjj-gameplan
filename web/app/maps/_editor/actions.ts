@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { CANONICAL_POSITIONS, getTemplate } from "@/lib/seed";
-import type { Confidence } from "@/lib/types";
+import type { Confidence, Position, Technique } from "@/lib/types";
 
 export type ActionResult = { error?: string };
 
@@ -328,6 +328,123 @@ export async function deleteTechnique(formData: FormData): Promise<ActionResult>
   const { error } = await supabase.from("techniques").delete().eq("id", id).eq("map_id", mapId);
   if (error) return { error: error.message };
 
+  return done(mapId);
+}
+
+// ----------------------------- Lote / deshacer -----------------------------
+
+// Cambia la confianza de varias técnicas de golpe.
+export async function bulkSetConfidence(
+  mapId: string,
+  ids: string[],
+  confidence: Confidence,
+): Promise<ActionResult> {
+  const { supabase, user } = await authed();
+  if (!user) return { error: "No autenticado." };
+  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!CONFIDENCES.includes(confidence)) return { error: "Confianza no válida." };
+  if (ids.length === 0) return {};
+
+  const { error } = await supabase
+    .from("techniques")
+    .update({ confidence })
+    .in("id", ids)
+    .eq("map_id", mapId);
+  if (error) return { error: error.message };
+  return done(mapId);
+}
+
+// Borra varias técnicas de golpe.
+export async function bulkDeleteTechniques(
+  mapId: string,
+  ids: string[],
+): Promise<ActionResult> {
+  const { supabase, user } = await authed();
+  if (!user) return { error: "No autenticado." };
+  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (ids.length === 0) return {};
+
+  const { error } = await supabase
+    .from("techniques")
+    .delete()
+    .in("id", ids)
+    .eq("map_id", mapId);
+  if (error) return { error: error.message };
+  return done(mapId);
+}
+
+// Re-inserta filas borradas (deshacer). No fija user_id: lo pone el default
+// auth.uid(); la RLS valida que el mapa y las posiciones referidas sean del
+// usuario, así que aunque el cliente mienta no puede escribir en ajeno.
+export async function restoreRows(
+  mapId: string,
+  rows: { positions?: Position[]; techniques?: Technique[] },
+): Promise<ActionResult> {
+  const { supabase, user } = await authed();
+  if (!user) return { error: "No autenticado." };
+  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+
+  const positions = rows.positions ?? [];
+  if (positions.length > 0) {
+    const { error } = await supabase.from("positions").insert(
+      positions.map((p) => ({
+        id: p.id,
+        name: p.name,
+        is_bad: p.is_bad,
+        reference_url: p.reference_url,
+        reference_label: p.reference_label,
+        reference_start_seconds: p.reference_start_seconds,
+        map_id: mapId,
+      })),
+    );
+    if (error) return { error: error.message };
+  }
+
+  const techniques = rows.techniques ?? [];
+  if (techniques.length > 0) {
+    const { error } = await supabase.from("techniques").insert(
+      techniques.map((t) => ({
+        id: t.id,
+        name: t.name,
+        source_position_id: t.source_position_id,
+        destination_position_id: t.destination_position_id,
+        fail_position_id: t.fail_position_id,
+        confidence: t.confidence,
+        is_submission: t.is_submission,
+        reference_url: t.reference_url,
+        reference_label: t.reference_label,
+        reference_start_seconds: t.reference_start_seconds,
+        map_id: mapId,
+      })),
+    );
+    if (error) return { error: error.message };
+  }
+
+  return done(mapId);
+}
+
+// Re-apunta destino / plan B de técnicas (para deshacer un borrado de posición
+// que los había puesto a NULL por ON DELETE SET NULL).
+export async function relinkTechniques(
+  mapId: string,
+  patches: { id: string; destination_position_id?: string; fail_position_id?: string }[],
+): Promise<ActionResult> {
+  const { supabase, user } = await authed();
+  if (!user) return { error: "No autenticado." };
+  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+
+  for (const p of patches) {
+    const patch: Record<string, string> = {};
+    if (p.destination_position_id) patch.destination_position_id = p.destination_position_id;
+    if (p.fail_position_id) patch.fail_position_id = p.fail_position_id;
+    if (Object.keys(patch).length === 0) continue;
+    const { error } = await supabase
+      .from("techniques")
+      .update(patch)
+      .eq("id", p.id)
+      .eq("map_id", mapId);
+    if (error) return { error: error.message };
+  }
   return done(mapId);
 }
 
