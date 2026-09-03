@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPosition, createTechnique } from "./actions";
+import { CANONICAL_POSITIONS } from "@/lib/seed";
 import type { Confidence, Position } from "@/lib/types";
 
 type MapRef = { id: string; name: string };
@@ -287,6 +288,11 @@ function QuickForm({
       <datalist id="cp-pos">
         {positions.map((p) => (
           <option key={p.id} value={p.name} />
+        ))}
+        {CANONICAL_POSITIONS.filter(
+          (c) => !positions.some((p) => p.name.toLowerCase() === c.name.toLowerCase()),
+        ).map((c) => (
+          <option key={c.name} value={c.name} />
         ))}
       </datalist>
       <input

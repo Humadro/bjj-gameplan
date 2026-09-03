@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getTemplate } from "@/lib/seed";
+import { CANONICAL_POSITIONS, getTemplate } from "@/lib/seed";
 import type { Confidence } from "@/lib/types";
 
 export type ActionResult = { error?: string };
@@ -85,6 +85,39 @@ export async function createPosition(formData: FormData): Promise<ActionResult> 
     };
   }
   return done(mapId);
+}
+
+// Carga el vocabulario canónico en el mapa de un golpe. Idempotente: omite las
+// que ya existan (por nombre, sin distinguir mayúsculas). Las posiciones sin
+// técnicas no se dibujan, así que esto no ensucia el mapa.
+export async function addStandardPositions(
+  formData: FormData,
+): Promise<ActionResult & { added?: number }> {
+  const { supabase, user } = await authed();
+  if (!user) return { error: "No autenticado." };
+
+  const mapId = str(formData, "map_id");
+  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+
+  const { data: existing, error: readError } = await supabase
+    .from("positions")
+    .select("name")
+    .eq("map_id", mapId);
+  if (readError) return { error: readError.message };
+
+  const have = new Set((existing ?? []).map((r) => r.name.trim().toLowerCase()));
+  const rows = CANONICAL_POSITIONS.filter((p) => !have.has(p.name.toLowerCase())).map((p) => ({
+    name: p.name,
+    is_bad: Boolean(p.isBad),
+    user_id: user.id,
+    map_id: mapId,
+  }));
+  if (rows.length === 0) return { ...done(mapId), added: 0 };
+
+  const { error } = await supabase.from("positions").insert(rows);
+  if (error) return { error: error.message };
+
+  return { ...done(mapId), added: rows.length };
 }
 
 export async function updatePosition(formData: FormData): Promise<ActionResult> {

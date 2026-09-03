@@ -17,34 +17,42 @@ export type SeedTemplate = {
 };
 
 // ---------------------------------------------------------------------------
-// Plantilla 1: posiciones base (sin técnicas)
+// Vocabulario canónico de posiciones (No-Gi). Es la lista "oficial": los selects
+// del editor y el autocompletado la ofrecen para que todo el mundo escriba
+// "Side Control Bottom" y no "side control bot" — así los datos son comparables
+// entre mapas y usuarios. No impide crear posiciones propias: solo estandariza.
+// ---------------------------------------------------------------------------
+export const CANONICAL_POSITIONS: { name: string; isBad?: boolean }[] = [
+  { name: "Standing" },
+  { name: "Passing" },
+  { name: "Side Control Top" },
+  { name: "Knee on Belly" },
+  { name: "Mount Top" },
+  { name: "Back Control" },
+  { name: "Truck" },
+  { name: "North-South" },
+  { name: "Half Guard Top" },
+  { name: "Turtle Top" },
+  { name: "Closed Guard Bottom" },
+  { name: "Open Guard Bottom" },
+  { name: "Half Guard Bottom" },
+  { name: "Butterfly Bottom" },
+  { name: "Rubber Guard" },
+  { name: "Front Headlock Bottom", isBad: true },
+  { name: "Side Control Bottom", isBad: true },
+  { name: "Mount Bottom", isBad: true },
+  { name: "Back Control Bottom", isBad: true },
+  { name: "Turtle Bottom", isBad: true },
+];
+
+// ---------------------------------------------------------------------------
+// Plantilla 1: posiciones base (sin técnicas) — es el vocabulario canónico.
 // ---------------------------------------------------------------------------
 const POSICIONES_BASE: SeedTemplate = {
   id: "posiciones-base",
   label: "Posiciones base",
   description: "~20 posiciones canónicas con las bottom marcadas. Sin técnicas: tú las cuelgas.",
-  positions: [
-    { key: "standing", name: "Standing" },
-    { key: "passing", name: "Passing" },
-    { key: "sct", name: "Side Control Top" },
-    { key: "kob", name: "Knee on Belly" },
-    { key: "mount", name: "Mount Top" },
-    { key: "back", name: "Back Control" },
-    { key: "truck", name: "Truck" },
-    { key: "ns", name: "North-South" },
-    { key: "hgt", name: "Half Guard Top" },
-    { key: "turtle", name: "Turtle Top" },
-    { key: "cgb", name: "Closed Guard Bottom" },
-    { key: "ogb", name: "Open Guard Bottom" },
-    { key: "hgb", name: "Half Guard Bottom" },
-    { key: "bfb", name: "Butterfly Bottom" },
-    { key: "rubber", name: "Rubber Guard" },
-    { key: "fhlb", name: "Front Headlock Bottom", isBad: true },
-    { key: "scb", name: "Side Control Bottom", isBad: true },
-    { key: "mbottom", name: "Mount Bottom", isBad: true },
-    { key: "backb", name: "Back Control Bottom", isBad: true },
-    { key: "turtleb", name: "Turtle Bottom", isBad: true },
-  ],
+  positions: CANONICAL_POSITIONS.map((p) => ({ key: p.name, name: p.name, isBad: p.isBad })),
   techniques: [],
 };
 

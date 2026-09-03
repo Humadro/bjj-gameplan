@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { createTechnique, deleteTechnique, updateTechnique } from "./actions";
 import { useAction } from "./useAction";
+import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
 import ReferenceFieldset from "./ReferenceFieldset";
 import { CONFIDENCE_COLOR, CONFIDENCE_LABEL, type Position, type Technique } from "@/lib/types";
 
@@ -63,6 +64,7 @@ function PositionSelect({
           name={newName}
           autoFocus
           required
+          list={CANONICAL_POS_LIST_ID}
           placeholder="Nombre de la posición nueva"
           className={inputCls}
         />

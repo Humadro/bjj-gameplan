@@ -1,3 +1,4 @@
+import CanonicalPositionsDatalist from "./CanonicalPositionsDatalist";
 import CommandPalette from "./CommandPalette";
 import GraphCanvas from "./GraphCanvas";
 import MapAnalysis from "./MapAnalysis";
@@ -68,6 +69,7 @@ export default function MapView({
       </main>
 
       <CommandPalette mapId={mapId} positions={positions} maps={maps} />
+      <CanonicalPositionsDatalist />
     </div>
   );
 }

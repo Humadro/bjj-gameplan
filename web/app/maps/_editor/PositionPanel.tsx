@@ -1,8 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { createPosition, deletePosition, updatePosition } from "./actions";
+import {
+  addStandardPositions,
+  createPosition,
+  deletePosition,
+  updatePosition,
+} from "./actions";
 import { useAction } from "./useAction";
+import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
 import ReferenceFieldset from "./ReferenceFieldset";
 import type { Position } from "@/lib/types";
 
@@ -19,6 +25,17 @@ export default function PositionPanel({
   const formRef = useRef<HTMLFormElement>(null);
   const { pending, error, run } = useAction();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [stdDone, setStdDone] = useState(false);
+
+  function addStandard() {
+    const fd = new FormData();
+    fd.set("map_id", mapId);
+    setStdDone(false);
+    run(addStandardPositions, fd, () => {
+      setStdDone(true);
+      window.setTimeout(() => setStdDone(false), 2500);
+    });
+  }
 
   return (
     <section className="flex flex-col gap-3">
@@ -35,7 +52,13 @@ export default function PositionPanel({
         }}
       >
         <input type="hidden" name="map_id" value={mapId} />
-        <input name="name" placeholder="Nueva posición" required className={inputCls} />
+        <input
+          name="name"
+          placeholder="Nueva posición"
+          required
+          list={CANONICAL_POS_LIST_ID}
+          className={inputCls}
+        />
         <label className="flex items-center gap-2 text-xs text-zinc-500">
           <input type="checkbox" name="is_bad" />
           Posición mala / bottom (flechas en rojo)
@@ -49,6 +72,22 @@ export default function PositionPanel({
           Añadir posición
         </button>
       </form>
+
+      <div className="flex flex-col gap-1">
+        <button
+          type="button"
+          onClick={addStandard}
+          disabled={pending}
+          className="self-start rounded-md border border-black/15 px-2 py-1 text-xs hover:bg-black/5 disabled:opacity-60 dark:border-white/20"
+        >
+          + Añadir posiciones estándar (No-Gi)
+        </button>
+        <p className="text-[11px] leading-snug text-zinc-400">
+          Carga el vocabulario canónico. Las que ya tengas se omiten y ninguna
+          aparece en el mapa hasta que le cuelgues una técnica.
+        </p>
+        {stdDone && <p className="text-[11px] text-green-700">Vocabulario cargado.</p>}
+      </div>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
@@ -66,7 +105,13 @@ export default function PositionPanel({
                   run(updatePosition, fd, () => setEditingId(null));
                 }}
               >
-                <input name="name" defaultValue={p.name} required className={inputCls} />
+                <input
+                  name="name"
+                  defaultValue={p.name}
+                  required
+                  list={CANONICAL_POS_LIST_ID}
+                  className={inputCls}
+                />
                 <label className="flex items-center gap-2 text-xs text-zinc-500">
                   <input type="checkbox" name="is_bad" defaultChecked={p.is_bad} />
                   Posición mala / bottom
