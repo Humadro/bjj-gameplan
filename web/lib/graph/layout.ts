@@ -24,6 +24,7 @@ const RED = CONFIDENCE_COLOR.baja;
 export function buildGraph(
   positions: Position[],
   techniques: Technique[],
+  opts: { alwaysShow?: Set<string> } = {},
 ): { nodes: GraphNode[]; edges: Edge[] } {
   const nodes: GraphNode[] = [];
   const edges: Edge[] = [];
@@ -32,7 +33,9 @@ export function buildGraph(
   // Solo se dibuja la bola de una posición si alguna técnica la usa (origen,
   // destino o plan B). Las posiciones "aparcadas" —creadas solo para tener el
   // nombre estandarizado en los selects— no ensucian el mapa.
-  const linked = new Set<string>();
+  // `alwaysShow` fuerza a mantener una posición aunque se hayan ocultado sus
+  // técnicas (posición plegada).
+  const linked = new Set<string>(opts.alwaysShow);
   for (const t of techniques) {
     linked.add(t.source_position_id);
     if (!t.is_submission && t.destination_position_id) linked.add(t.destination_position_id);

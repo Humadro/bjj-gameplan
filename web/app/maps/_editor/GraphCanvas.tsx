@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
   Background,
   Controls,
@@ -14,12 +14,20 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { buildGraph, type PositionNodeData, type TechniqueNodeData } from "@/lib/graph/layout";
-import { computeFocusSet, type FocusDirection } from "@/lib/graph/focus";
+import { computeFocusSet, computeMainLine, type FocusDirection } from "@/lib/graph/focus";
 import { getRef, youtubeEmbedUrl, type RefInfo } from "@/lib/graph/refs";
 import type { Position, Technique } from "@/lib/types";
 import ExportButton from "./ExportButton";
+import GraphLegend from "./GraphLegend";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1, border: "none" } as const;
+
+// Datos extra que GraphCanvas inyecta en los nodos posición para el plegado.
+type CollapseInfo = {
+  hiddenCount?: number; // >0 => plegada; nº de técnicas ocultas
+  outgoing?: number; // técnicas que salen (para saber si es plegable)
+  onToggleCollapse?: () => void;
+};
 
 function RefBadge() {
   return (
@@ -33,7 +41,9 @@ function RefBadge() {
 }
 
 function PositionNode({ data }: NodeProps) {
-  const d = data as PositionNodeData;
+  const d = data as PositionNodeData & CollapseInfo;
+  const collapsed = (d.hiddenCount ?? 0) > 0;
+  const collapsible = collapsed || (d.outgoing ?? 0) > 0;
   return (
     <div
       className={`relative flex h-full w-full items-center justify-center rounded-full p-2 text-center text-[12px] font-semibold leading-[1.15] text-zinc-900 ${
@@ -49,6 +59,18 @@ function PositionNode({ data }: NodeProps) {
       <Handle type="target" position={HandlePosition.Top} style={HANDLE_STYLE} />
       <span className="line-clamp-4 px-1">{d.label}</span>
       {d.hasRef && <RefBadge />}
+      {collapsible && d.onToggleCollapse && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            d.onToggleCollapse!();
+          }}
+          title={collapsed ? `Mostrar ${d.hiddenCount} técnica(s)` : "Plegar esta posición"}
+          className="absolute -bottom-1.5 left-1/2 flex h-4 min-w-4 -translate-x-1/2 items-center justify-center rounded-full border border-black/15 bg-white px-1 text-[9px] font-bold leading-none text-zinc-600 shadow hover:bg-black/5"
+        >
+          {collapsed ? `+${d.hiddenCount}` : "–"}
+        </button>
+      )}
       <Handle type="source" position={HandlePosition.Bottom} style={HANDLE_STYLE} />
     </div>
   );
@@ -152,17 +174,66 @@ export default function GraphCanvas({
   toolbar?: ReactNode;
   mapName?: string;
 }) {
-  const { nodes, edges } = useMemo(
-    () => buildGraph(positions, techniques),
-    [positions, techniques],
-  );
-
-  // Enfoque: resaltar los caminos que llegan a (o salen de) una posición.
+  // Enfoque: resaltar los caminos que llegan a (o salen de) una posición, o la
+  // "vía principal" (siempre la técnica de más confianza).
   const [focusId, setFocusId] = useState("");
   const [dir, setDir] = useState<FocusDirection>("up");
 
+  // Posiciones plegadas: se ocultan sus técnicas de salida (no recursivo).
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggleCollapse = useCallback((posId: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(posId)) next.delete(posId);
+      else next.add(posId);
+      return next;
+    });
+  }, []);
+
   // Enlace de estudio abierto en el panel lateral.
   const [selectedRef, setSelectedRef] = useState<SelectedRef | null>(null);
+
+  const hiddenPerSource = useMemo(() => {
+    const m = new Map<string, number>();
+    if (collapsed.size === 0) return m;
+    for (const t of techniques) {
+      if (collapsed.has(t.source_position_id)) {
+        m.set(t.source_position_id, (m.get(t.source_position_id) ?? 0) + 1);
+      }
+    }
+    return m;
+  }, [techniques, collapsed]);
+
+  const outgoingPerSource = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const t of techniques) {
+      m.set(t.source_position_id, (m.get(t.source_position_id) ?? 0) + 1);
+    }
+    return m;
+  }, [techniques]);
+
+  const { nodes, edges } = useMemo(() => {
+    const visibleTechniques =
+      collapsed.size === 0
+        ? techniques
+        : techniques.filter((t) => !collapsed.has(t.source_position_id));
+    const g = buildGraph(positions, visibleTechniques, { alwaysShow: collapsed });
+    // Inyecta la info de plegado en los nodos posición.
+    const nodes = g.nodes.map((n) => {
+      if (n.type !== "position") return n;
+      const posId = n.id.slice("pos:".length);
+      return {
+        ...n,
+        data: {
+          ...n.data,
+          hiddenCount: hiddenPerSource.get(posId) ?? 0,
+          outgoing: outgoingPerSource.get(posId) ?? 0,
+          onToggleCollapse: () => toggleCollapse(posId),
+        },
+      };
+    });
+    return { nodes, edges: g.edges };
+  }, [positions, techniques, collapsed, hiddenPerSource, outgoingPerSource, toggleCollapse]);
 
   // Solo las posiciones que están en el mapa (las aparcadas no se pueden enfocar).
   const focusablePositions = useMemo(() => {
@@ -173,7 +244,10 @@ export default function GraphCanvas({
   const view = useMemo(() => {
     const root = `pos:${focusId}`;
     if (!focusId || !nodes.some((n) => n.id === root)) return { nodes, edges };
-    const { nodeIds, edgeIds } = computeFocusSet(edges, root, dir);
+    const { nodeIds, edgeIds } =
+      dir === "principal"
+        ? computeMainLine(positions, techniques, focusId)
+        : computeFocusSet(edges, root, dir);
     return {
       nodes: nodes.map((n) =>
         nodeIds.has(n.id) ? n : { ...n, style: { ...n.style, opacity: 0.12 } },
@@ -184,7 +258,7 @@ export default function GraphCanvas({
           : { ...e, style: { ...e.style, opacity: 0.07 } },
       ),
     };
-  }, [nodes, edges, focusId, dir]);
+  }, [nodes, edges, focusId, dir, positions, techniques]);
 
   function openRefFor(node: Node) {
     const [kind, id] = node.id.split(":");
@@ -211,9 +285,9 @@ export default function GraphCanvas({
 
   return (
     <ReactFlow
-      // `key` fuerza un re-fit cuando cambian los datos y el layout se recalcula.
-      // (el enfoque solo cambia opacidad, no la longitud, así que no re-monta.)
-      key={`${nodes.length}-${edges.length}`}
+      // `key` fuerza un re-fit solo cuando se añaden/quitan datos. Enfoque y
+      // plegado cambian el set de nodos sin re-montar, así el viewport no salta.
+      key={`${positions.length}-${techniques.length}`}
       nodes={view.nodes}
       edges={view.edges}
       nodeTypes={nodeTypes}
@@ -228,41 +302,56 @@ export default function GraphCanvas({
       <Background color="#d4d4d8" gap={22} />
       <Controls showInteractive={false} />
       <MiniMap pannable zoomable />
-      <Panel
-        position="top-left"
-        className="flex items-center gap-1 rounded-md border border-black/10 bg-white/95 px-2 py-1 text-xs shadow-sm"
-      >
-        <span className="text-zinc-500">Enfocar</span>
-        <select
-          value={focusId}
-          onChange={(e) => setFocusId(e.currentTarget.value)}
-          className="max-w-[10rem] rounded border border-black/15 px-1 py-0.5"
-        >
-          <option value="">(todo)</option>
-          {focusablePositions.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        {focusId && (
-          <>
+      <Panel position="top-left" className="flex flex-col items-start gap-1">
+        <div className="flex items-center gap-1 rounded-md border border-black/10 bg-white/95 px-2 py-1 text-xs shadow-sm">
+          <span className="text-zinc-500">Enfocar</span>
+          <select
+            value={focusId}
+            onChange={(e) => setFocusId(e.currentTarget.value)}
+            className="max-w-[10rem] rounded border border-black/15 px-1 py-0.5"
+          >
+            <option value="">(todo)</option>
+            {focusablePositions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          {focusId && (
+            <>
+              <button
+                onClick={() =>
+                  setDir((d) => (d === "up" ? "down" : d === "down" ? "principal" : "up"))
+                }
+                className="rounded border border-black/15 px-1 py-0.5 hover:bg-black/5"
+                title="Cambiar modo: llegan / salen / vía principal"
+              >
+                {dir === "up"
+                  ? "llegan aquí ↑"
+                  : dir === "down"
+                    ? "salen de aquí ↓"
+                    : "vía principal ★"}
+              </button>
+              <button
+                onClick={() => setFocusId("")}
+                className="rounded border border-black/15 px-1 py-0.5 hover:bg-black/5"
+                title="Quitar enfoque"
+              >
+                ✕
+              </button>
+            </>
+          )}
+          {collapsed.size > 0 && (
             <button
-              onClick={() => setDir((d) => (d === "up" ? "down" : "up"))}
+              onClick={() => setCollapsed(new Set())}
               className="rounded border border-black/15 px-1 py-0.5 hover:bg-black/5"
-              title="Cambiar dirección"
+              title="Desplegar todas"
             >
-              {dir === "up" ? "llegan aquí ↑" : "salen de aquí ↓"}
+              desplegar todo ({collapsed.size})
             </button>
-            <button
-              onClick={() => setFocusId("")}
-              className="rounded border border-black/15 px-1 py-0.5 hover:bg-black/5"
-              title="Quitar enfoque"
-            >
-              ✕
-            </button>
-          </>
-        )}
+          )}
+        </div>
+        <GraphLegend />
       </Panel>
       <Panel position="top-right" className="flex items-start gap-2">
         {toolbar}
