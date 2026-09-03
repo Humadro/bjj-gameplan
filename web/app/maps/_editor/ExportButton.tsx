@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { getNodesBounds, getViewportForBounds, useReactFlow } from "@xyflow/react";
+import { getNodesBounds, useReactFlow } from "@xyflow/react";
 import { buildGamePlanText } from "@/lib/graph/gameplan";
 import type { Position, Technique } from "@/lib/types";
 
-const MAX = 5000;
-const MARGIN = 1.15; // 15% de aire alrededor del árbol
+const MAX = 8000; // lado máximo de la imagen en px
+const PAD = 64; // aire alrededor del árbol, en px de imagen (deja sitio a etiquetas y 🔗)
 
 function filename(ext: string) {
   return `bjj-gameplan-${new Date().toISOString().slice(0, 10)}.${ext}`;
@@ -36,9 +36,20 @@ export default function ExportButton({
     if (nodes.length === 0) return null;
 
     const bounds = getNodesBounds(nodes);
-    const w = Math.min(Math.ceil(bounds.width * MARGIN), MAX);
-    const h = Math.min(Math.ceil(bounds.height * MARGIN), MAX);
-    const vp = getViewportForBounds(bounds, w, h, 0.5, 2, 0.1);
+
+    // Zoom para que el árbol ENTERO quepa dentro de MAX, con hueco para PAD.
+    // Sin mínimo agresivo (el clamp a 0.5 de getViewportForBounds es lo que
+    // recortaba los mapas grandes): un mapa enorme simplemente sale más pequeño.
+    const zoom = Math.max(
+      0.05,
+      Math.min(2, (MAX - PAD * 2) / bounds.width, (MAX - PAD * 2) / bounds.height),
+    );
+
+    const w = Math.ceil(bounds.width * zoom + PAD * 2);
+    const h = Math.ceil(bounds.height * zoom + PAD * 2);
+    // Coloca la esquina (bounds.x, bounds.y) del árbol en (PAD, PAD) de la imagen.
+    const tx = PAD - bounds.x * zoom;
+    const ty = PAD - bounds.y * zoom;
 
     const viewport = document.querySelector<HTMLElement>(".react-flow__viewport");
     if (!viewport) return null;
@@ -52,7 +63,7 @@ export default function ExportButton({
       style: {
         width: `${w}px`,
         height: `${h}px`,
-        transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
+        transform: `translate(${tx}px, ${ty}px) scale(${zoom})`,
       },
     });
     return { dataUrl, w, h };
