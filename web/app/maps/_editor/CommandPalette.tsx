@@ -26,6 +26,8 @@ type ParsedLine =
 
 const CONF_RE = /,\s*(alta|media|baja)\s*$/i;
 const SEP_RE = /\s*(?:->|→|›|>)\s*/;
+const SEP_SPLIT_RE = /(\s*(?:->|→|›|>)\s*)/; // con captura: conserva los separadores
+const CONF_TAIL_RE = /^(.*?)(\s*,\s*(?:alta|media|baja)\s*)$/i;
 const cls = "rounded-md border border-black/15 px-2 py-1 text-sm";
 
 // Parsea UNA línea. El textarea de la paleta procesa cada línea por separado.
@@ -127,6 +129,90 @@ function describe(p: ParsedLine): { icon: string; text: string; bad?: boolean } 
   }
 }
 
+// ---- Resaltado en vivo: posiciones en negrita, técnicas normales ----------
+
+type Tok = { text: string; bold?: boolean };
+
+// "desde X" -> "desde " normal, "X" en negrita. Sin "desde": espacios sueltos
+// normales, el resto en negrita (es un nombre de posición).
+function posTokens(seg: string): Tok[] {
+  const d = seg.match(/^(\s*)(desde\s+)(.*)$/i);
+  if (d) return [{ text: d[1] + d[2] }, { text: d[3], bold: true }];
+  const s = seg.match(/^(\s*)([\s\S]*)$/)!;
+  return [{ text: s[1] }, { text: s[2], bold: true }];
+}
+
+// Trocea UNA línea en tokens con/ sin negrita, conservando cada carácter
+// (espacios y separadores incluidos) para que el overlay calce con el textarea.
+function lineTokens(line: string): Tok[] {
+  if (line.trim() === "") return [{ text: line }];
+
+  const pm = line.match(/^(\s*)(\+?pos|posici[oó]n)(\s+)([\s\S]*)$/i);
+  if (pm) return [{ text: pm[1] + pm[2] + pm[3] }, { text: pm[4], bold: true }];
+
+  if (/^\s*ir(?:\s+a)?\s+/i.test(line)) return [{ text: line }];
+
+  if (SEP_RE.test(line)) {
+    const parts = line.split(SEP_SPLIT_RE);
+    const contentCount = Math.ceil(parts.length / 2);
+    const roleOf = (idx: number): "pos" | "tech" | "plain" => {
+      if (contentCount === 2) return idx === 0 ? "pos" : "tech";
+      if (contentCount === 3) return idx === 1 ? "tech" : "pos";
+      if (contentCount >= 5 && contentCount % 2 === 1) return idx % 2 === 0 ? "pos" : "tech";
+      return "plain";
+    };
+
+    const toks: Tok[] = [];
+    let ci = 0;
+    for (let i = 0; i < parts.length; i++) {
+      if (i % 2 === 1) {
+        toks.push({ text: parts[i] }); // separador
+        continue;
+      }
+      let chunk = parts[i];
+      let tail = "";
+      if (i === parts.length - 1) {
+        const cm = chunk.match(CONF_TAIL_RE);
+        if (cm) {
+          chunk = cm[1];
+          tail = cm[2];
+        }
+      }
+      const role = roleOf(ci);
+      if (role === "pos" && ci === 0) toks.push(...posTokens(chunk));
+      else if (role === "pos") toks.push({ text: chunk, bold: true });
+      else toks.push({ text: chunk });
+      if (tail) toks.push({ text: tail });
+      ci++;
+    }
+    return toks;
+  }
+
+  return [{ text: line }];
+}
+
+function Highlighted({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <>
+      {lines.map((ln, i) => (
+        <span key={i}>
+          {lineTokens(ln).map((t, j) =>
+            t.bold ? (
+              <strong key={j} className="font-bold text-zinc-900">
+                {t.text}
+              </strong>
+            ) : (
+              <span key={j}>{t.text}</span>
+            ),
+          )}
+          {i < lines.length - 1 ? "\n" : ""}
+        </span>
+      ))}
+    </>
+  );
+}
+
 export default function CommandPalette({
   mapId,
   positions,
@@ -144,6 +230,7 @@ export default function CommandPalette({
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -308,26 +395,42 @@ export default function CommandPalette({
       >
         {mode === "text" ? (
           <>
-            <textarea
-              ref={taRef}
-              value={text}
-              rows={rows}
-              onChange={(e) => {
-                setText(e.currentTarget.value);
-                setFlash(null);
-                setErrMsg(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  runAll();
+            {/* overlay de resaltado: el textarea va con texto transparente
+                encima, y este div pinta lo mismo con las posiciones en negrita */}
+            <div className="relative">
+              <div
+                ref={backdropRef}
+                aria-hidden
+                className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words rounded-md border border-transparent px-3 py-2 font-mono text-[13px] leading-relaxed text-zinc-500"
+              >
+                <Highlighted text={text} />
+              </div>
+              <textarea
+                ref={taRef}
+                value={text}
+                rows={rows}
+                onScroll={(e) => {
+                  if (backdropRef.current) {
+                    backdropRef.current.scrollTop = e.currentTarget.scrollTop;
+                  }
+                }}
+                onChange={(e) => {
+                  setText(e.currentTarget.value);
+                  setFlash(null);
+                  setErrMsg(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    runAll();
+                  }
+                }}
+                placeholder={
+                  "desde media guardia > gancho > x-guard > single leg > side control top, alta\npos rubber guard mala"
                 }
-              }}
-              placeholder={
-                "desde media guardia > gancho > x-guard > single leg > side control top, alta\npos rubber guard mala"
-              }
-              className="w-full resize-y rounded-md border border-black/15 px-3 py-2 font-mono text-[13px] leading-relaxed"
-            />
+                className="relative block w-full resize-y rounded-md border border-black/15 bg-transparent px-3 py-2 font-mono text-[13px] leading-relaxed text-transparent caret-zinc-900 placeholder:text-zinc-400"
+              />
+            </div>
 
             {entries.length > 0 ? (
               <ul className="mt-2 flex flex-col gap-0.5 text-xs">
