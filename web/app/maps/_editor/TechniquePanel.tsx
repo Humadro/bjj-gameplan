@@ -5,6 +5,7 @@ import { createTechnique, deleteTechnique, updateTechnique } from "./actions";
 import { useAction } from "./useAction";
 import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
 import ReferenceFieldset from "./ReferenceFieldset";
+import { CANONICAL_POSITIONS } from "@/lib/seed";
 import { CONFIDENCE_COLOR, CONFIDENCE_LABEL, type Position, type Technique } from "@/lib/types";
 
 const inputCls =
@@ -41,6 +42,12 @@ function PositionSelect({
   const [isNew, setIsNew] = useState(false);
   const newName = NEW_FIELD[name];
 
+  // Canónicas que aún no están en el mapa: se pueden elegir aquí y se crean al
+  // guardar (con su flag bottom si lo llevan). Value "__name__:<nombre>".
+  const canonExtra = CANONICAL_POSITIONS.filter(
+    (c) => !positions.some((p) => p.name.toLowerCase() === c.name.toLowerCase()),
+  );
+
   return (
     <label className="flex flex-col gap-1 text-xs text-zinc-500">
       {label}
@@ -57,6 +64,16 @@ function PositionSelect({
             {p.name}
           </option>
         ))}
+        {canonExtra.length > 0 && (
+          <optgroup label="Estándar (No-Gi) · se crea al guardar">
+            {canonExtra.map((c) => (
+              <option key={c.name} value={`__name__:${c.name}`}>
+                {c.name}
+                {c.isBad ? " (bottom)" : ""}
+              </option>
+            ))}
+          </optgroup>
+        )}
         <option value={NEW}>➕ Crear posición nueva…</option>
       </select>
       {isNew && (

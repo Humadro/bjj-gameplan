@@ -166,8 +166,13 @@ export async function deletePosition(formData: FormData): Promise<ActionResult> 
 
 // ----------------------------- Técnicas -----------------------------
 
-// El <select> puede traer un id existente, "" (nada) o "__new__" (crear al vuelo
-// con el nombre del campo de texto que la acompaña).
+const CANON_PREFIX = "__name__:";
+
+// El <select> puede traer:
+//  - un id existente        -> se usa tal cual
+//  - ""                     -> nada
+//  - "__new__"              -> crear con el nombre del <input> que lo acompaña
+//  - "__name__:<nombre>"    -> opción canónica: find-or-create por ese nombre
 async function resolvePositionId(
   supabase: Supa,
   userId: string,
@@ -175,9 +180,13 @@ async function resolvePositionId(
   idValue: string,
   newName: string,
 ): Promise<{ id: string | null } | { error: string }> {
-  if (idValue && idValue !== "__new__") return { id: idValue };
+  const canonName = idValue.startsWith(CANON_PREFIX)
+    ? idValue.slice(CANON_PREFIX.length).trim()
+    : "";
 
-  const name = newName.trim();
+  if (idValue && idValue !== "__new__" && !canonName) return { id: idValue };
+
+  const name = (canonName || newName).trim();
   if (!name) return { id: null };
 
   const { data: existing } = await supabase
@@ -189,9 +198,13 @@ async function resolvePositionId(
     .maybeSingle();
   if (existing) return { id: existing.id };
 
+  // Si el nombre coincide con una posición canónica, hereda su flag is_bad
+  // (p. ej. "Mount Bottom" se crea ya marcada como bottom).
+  const canon = CANONICAL_POSITIONS.find((c) => c.name.toLowerCase() === name.toLowerCase());
+
   const { data: created, error } = await supabase
     .from("positions")
-    .insert({ name, user_id: userId, map_id: mapId })
+    .insert({ name, is_bad: Boolean(canon?.isBad), user_id: userId, map_id: mapId })
     .select("id")
     .single();
   if (error || !created) {
