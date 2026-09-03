@@ -5,10 +5,12 @@ export type FocusDirection = "up" | "down" | "principal";
 
 const CONF_RANK: Record<Confidence, number> = { alta: 3, media: 2, baja: 1 };
 
-// "Vía principal": desde `startPositionId`, en cada posición sigue la técnica de
-// mayor confianza (empate -> la creada antes) hasta llegar a una sumisión, a un
-// callejón sin salida, o a una posición ya visitada. Devuelve el mismo formato
-// que `computeFocusSet` (ids `pos:<id>` / `tech:<id>` / `src:` / `dst:`).
+// "Vía principal": el árbol de máxima confianza que ENTRA y SALE de
+// `startPositionId`. Umbral = "alta"; si ninguna técnica que toca la posición de
+// partida es alta, se usa la confianza máxima presente entre esas técnicas.
+// Después se recorre el grafo en ambos sentidos siguiendo solo las técnicas de
+// confianza >= umbral. Devuelve el mismo formato que `computeFocusSet`
+// (ids `pos:<id>` / `tech:<id>` / `src:` / `dst:`).
 export function computeMainLine(
   positions: Position[],
   techniques: Technique[],
@@ -19,26 +21,44 @@ export function computeMainLine(
   const byId = new Map(positions.map((p) => [p.id, p]));
   if (!byId.has(startPositionId)) return { nodeIds, edgeIds };
 
-  let current: string | null = startPositionId;
-  const seen = new Set<string>();
-  while (current && byId.has(current) && !seen.has(current)) {
-    seen.add(current);
-    nodeIds.add(`pos:${current}`);
+  nodeIds.add(`pos:${startPositionId}`);
 
-    const outgoing = techniques
-      .filter((t) => t.source_position_id === current)
-      .sort((a, b) => CONF_RANK[b.confidence] - CONF_RANK[a.confidence]);
-    const best = outgoing[0];
-    if (!best) break;
+  // Umbral de confianza a partir de las técnicas que tocan la posición de partida.
+  const incident = techniques.filter(
+    (t) =>
+      t.source_position_id === startPositionId ||
+      t.destination_position_id === startPositionId,
+  );
+  const maxIncident = incident.reduce((m, t) => Math.max(m, CONF_RANK[t.confidence]), 0);
+  if (maxIncident === 0) return { nodeIds, edgeIds };
+  const threshold = Math.min(maxIncident, CONF_RANK.alta);
 
-    nodeIds.add(`tech:${best.id}`);
-    edgeIds.add(`src:${best.id}`);
+  const strong = techniques.filter((t) => CONF_RANK[t.confidence] >= threshold);
 
-    if (best.is_submission || !best.destination_position_id) break;
-    edgeIds.add(`dst:${best.id}`);
-    current = best.destination_position_id;
+  // BFS bidireccional: desde cada posición del árbol, sigue las técnicas fuertes
+  // hacia su destino y también las técnicas fuertes cuyo destino es esta posición.
+  const visited = new Set<string>([startPositionId]);
+  const queue: string[] = [startPositionId];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const t of strong) {
+      const goesOut = t.source_position_id === current;
+      const comesIn = !t.is_submission && t.destination_position_id === current;
+      if (!goesOut && !comesIn) continue;
+
+      nodeIds.add(`tech:${t.id}`);
+      edgeIds.add(`src:${t.id}`);
+      if (!t.is_submission && t.destination_position_id) edgeIds.add(`dst:${t.id}`);
+
+      const other = goesOut ? t.destination_position_id : t.source_position_id;
+      if (t.is_submission || !other) continue;
+      if (byId.has(other)) nodeIds.add(`pos:${other}`);
+      if (byId.has(other) && !visited.has(other)) {
+        visited.add(other);
+        queue.push(other);
+      }
+    }
   }
-  if (current && byId.has(current)) nodeIds.add(`pos:${current}`);
 
   return { nodeIds, edgeIds };
 }

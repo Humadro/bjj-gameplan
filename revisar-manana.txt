@@ -1,9 +1,3 @@
-Revisar en el navegador - implementaciones nuevas sin probar
-
-PREVIO: ejecutar en Supabase SQL editor, en orden:
-  [ ] 0004_fail_route.sql
-  [ ] 0005_reference_links.sql
-  (sin ellas, crear/editar tecnicas y posiciones da error)
 
 --- Lote 1 ---
 
@@ -63,7 +57,9 @@ PREVIO: ejecutar en Supabase SQL editor, en orden:
 [ ] Leyenda del canvas: chip "❔ Leyenda" abajo-izq del panel Enfocar; al abrir
     explica colores/lineas/formas.
 [ ] Enfocar -> el boton ahora cicla: llegan aqui / salen de aqui / via principal.
-    "via principal" resalta la linea de mas confianza saliendo de esa posicion.
+    "via principal" resalta el ARBOL de maxima confianza que ENTRA y SALE de esa
+    posicion (umbral = alta; si nada que la toca es alta, su confianza maxima).
+    Debe subir por las tecnicas alta que llegan a ella, no solo las que salen.
 [ ] Plegar posiciones: boton -/+N en la bola. Al plegar se ocultan sus tecnicas
     de salida (y lo que quede huerfano). "desplegar todo (N)" en el panel Enfocar.
     El zoom NO debe saltar al plegar/enfocar.

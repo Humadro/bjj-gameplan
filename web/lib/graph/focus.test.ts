@@ -33,25 +33,54 @@ describe("computeFocusSet", () => {
 });
 
 describe("computeMainLine", () => {
-  const positions = [pos("a", "A"), pos("b", "B"), pos("c", "C")];
+  const positions = [pos("a", "A"), pos("b", "B"), pos("c", "C"), pos("d", "D")];
 
-  it("follows the highest-confidence technique at each position", () => {
+  it("marks the high-confidence tree that enters AND leaves the position", () => {
     const techniques = [
+      tech("in", "d", { destination_position_id: "a", confidence: "alta" }),
+      tech("out", "a", { destination_position_id: "b", confidence: "alta" }),
       tech("weak", "a", { destination_position_id: "c", confidence: "baja" }),
-      tech("strong", "a", { destination_position_id: "b", confidence: "alta" }),
-      tech("finish", "b", { is_submission: true, confidence: "media" }),
+      tech("next", "b", { destination_position_id: "c", confidence: "media" }),
     ];
     const { nodeIds, edgeIds } = computeMainLine(positions, techniques, "a");
-    expect(nodeIds.has("pos:a")).toBe(true);
-    expect(nodeIds.has("tech:strong")).toBe(true);
+    // sube por la arista que llega a "a"...
+    expect(nodeIds.has("pos:d")).toBe(true);
+    expect(nodeIds.has("tech:in")).toBe(true);
+    expect(edgeIds.has("dst:in")).toBe(true);
+    // ...y baja por la que sale
     expect(nodeIds.has("pos:b")).toBe(true);
-    expect(nodeIds.has("tech:finish")).toBe(true);
+    expect(nodeIds.has("tech:out")).toBe(true);
+    // pero solo por técnicas de confianza >= umbral (alta)
     expect(nodeIds.has("tech:weak")).toBe(false);
-    expect(edgeIds.has("dst:strong")).toBe(true);
-    expect(edgeIds.has("dst:finish")).toBe(false); // sumisión: sin arista de destino
+    expect(nodeIds.has("tech:next")).toBe(false);
+    expect(nodeIds.has("pos:c")).toBe(false);
   });
 
-  it("stops on a cycle", () => {
+  it("falls back to the max confidence present when nothing alta touches the position", () => {
+    const techniques = [
+      tech("m1", "a", { destination_position_id: "b", confidence: "media" }),
+      tech("m2", "b", { destination_position_id: "c", confidence: "media" }),
+      tech("low", "a", { destination_position_id: "c", confidence: "baja" }),
+    ];
+    const { nodeIds } = computeMainLine(positions, techniques, "a");
+    expect(nodeIds.has("tech:m1")).toBe(true);
+    expect(nodeIds.has("tech:m2")).toBe(true);
+    expect(nodeIds.has("pos:c")).toBe(true);
+    expect(nodeIds.has("tech:low")).toBe(false);
+  });
+
+  it("includes an outgoing high-confidence submission as a leaf (no dst edge)", () => {
+    const techniques = [
+      tech("sub", "a", { is_submission: true, confidence: "alta" }),
+      tech("weak", "a", { destination_position_id: "b", confidence: "baja" }),
+    ];
+    const { nodeIds, edgeIds } = computeMainLine(positions, techniques, "a");
+    expect(nodeIds.has("tech:sub")).toBe(true);
+    expect(edgeIds.has("src:sub")).toBe(true);
+    expect(edgeIds.has("dst:sub")).toBe(false);
+  });
+
+  it("is safe with cycles", () => {
     const techniques = [
       tech("1", "a", { destination_position_id: "b", confidence: "alta" }),
       tech("2", "b", { destination_position_id: "a", confidence: "alta" }),

@@ -184,7 +184,7 @@ export default function GraphCanvas({
   // Nodo abierto en el inspector (editar/borrar). Solo si el mapa es editable.
   const [inspect, setInspect] = useState<{ kind: "pos" | "tech"; id: string } | null>(null);
   // Enfoque: resaltar los caminos que llegan a (o salen de) una posición, o la
-  // "vía principal" (siempre la técnica de más confianza).
+  // "vía principal" (el árbol de máxima confianza que entra y sale de ella).
   const [focusId, setFocusId] = useState("");
   const [dir, setDir] = useState<FocusDirection>("up");
 
@@ -361,7 +361,7 @@ export default function GraphCanvas({
                   setDir((d) => (d === "up" ? "down" : d === "down" ? "principal" : "up"))
                 }
                 className="rounded border border-black/15 px-1 py-0.5 hover:bg-black/5"
-                title="Cambiar modo: llegan / salen / vía principal"
+                title="Cambiar modo: llegan aquí / salen de aquí / vía principal (árbol de alta confianza que entra y sale)"
               >
                 {dir === "up"
                   ? "llegan aquí ↑"
