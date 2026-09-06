@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { createMap, deleteMap, renameMap } from "./actions";
 
 export type MapRow = {
@@ -14,6 +15,7 @@ export type MapRow = {
 const inputCls = "rounded-md border border-black/15 px-3 py-2 text-sm";
 
 export default function MapsList({ maps }: { maps: MapRow[] }) {
+  const t = useTranslations("MapsList");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export default function MapsList({ maps }: { maps: MapRow[] }) {
       >
         <input
           name="name"
-          placeholder="Nombre del mapa nuevo (p. ej. No-gi, Competición…)"
+          placeholder={t("newMapPlaceholder")}
           required
           className={`${inputCls} flex-1`}
         />
@@ -49,16 +51,14 @@ export default function MapsList({ maps }: { maps: MapRow[] }) {
           disabled={pending}
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
-          Crear mapa
+          {t("createMap")}
         </button>
       </form>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {maps.length === 0 ? (
-        <p className="text-sm text-zinc-500">
-          Aún no tienes ningún mapa. Crea el primero arriba.
-        </p>
+        <p className="text-sm text-zinc-500">{t("empty")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {maps.map((m) => (
@@ -78,14 +78,14 @@ export default function MapsList({ maps }: { maps: MapRow[] }) {
                 >
                   <input name="name" defaultValue={m.name} required className={`${inputCls} flex-1`} />
                   <button className="rounded-md bg-zinc-900 px-3 py-1 text-xs text-white">
-                    Guardar
+                    {t("save")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingId(null)}
                     className="rounded-md border border-black/15 px-3 py-1 text-xs"
                   >
-                    Cancelar
+                    {t("cancel")}
                   </button>
                 </form>
               ) : (
@@ -93,7 +93,7 @@ export default function MapsList({ maps }: { maps: MapRow[] }) {
                   <Link href={`/maps/${m.id}`} className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{m.name}</span>
                     <span className="text-xs text-zinc-500">
-                      {m.positions} posiciones · {m.techniques} técnicas
+                      {t("counts", { positions: m.positions, techniques: m.techniques })}
                     </span>
                   </Link>
                   <span className="flex shrink-0 gap-2 text-xs">
@@ -101,18 +101,18 @@ export default function MapsList({ maps }: { maps: MapRow[] }) {
                       onClick={() => setEditingId(m.id)}
                       className="text-zinc-500 hover:underline"
                     >
-                      renombrar
+                      {t("rename")}
                     </button>
                     <button
                       onClick={() => {
-                        if (!confirm(`¿Borrar el mapa "${m.name}" y todo su contenido?`)) return;
+                        if (!confirm(t("confirmDelete", { name: m.name }))) return;
                         const fd = new FormData();
                         fd.set("id", m.id);
                         run(deleteMap, fd);
                       }}
                       className="text-red-600 hover:underline"
                     >
-                      borrar
+                      {t("delete")}
                     </button>
                   </span>
                 </>

@@ -2,9 +2,13 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { LOCALES, LOCALE_LABELS } from "@/i18n/config";
 import { login, signup, type AuthResult } from "./actions";
 
 export default function LoginForm() {
+  const t = useTranslations("Auth");
+  const locale = useLocale();
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<AuthResult | null>(null);
@@ -31,13 +35,13 @@ export default function LoginForm() {
         run(login);
       }}
     >
-      <h1 className="text-xl font-semibold">BJJ Game Plan</h1>
-      <p className="-mt-2 text-sm text-zinc-500">Entra con tu email para ver tu mapa.</p>
+      <h1 className="text-xl font-semibold">{t("appName")}</h1>
+      <p className="-mt-2 text-sm text-zinc-500">{t("subtitle")}</p>
 
       <input type="hidden" name="next" value={next} />
 
       <label className="flex flex-col gap-1 text-sm">
-        Email
+        {t("email")}
         <input
           name="email"
           type="email"
@@ -48,7 +52,7 @@ export default function LoginForm() {
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
-        Contraseña
+        {t("password")}
         <input
           name="password"
           type="password"
@@ -56,6 +60,21 @@ export default function LoginForm() {
           required
           className="rounded-md border border-black/15 px-3 py-2 dark:border-white/15 dark:bg-zinc-800"
         />
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm">
+        {t("language")}
+        <select
+          name="locale"
+          defaultValue={locale}
+          className="rounded-md border border-black/15 px-3 py-2 dark:border-white/15 dark:bg-zinc-800"
+        >
+          {LOCALES.map((l) => (
+            <option key={l} value={l}>
+              {LOCALE_LABELS[l]}
+            </option>
+          ))}
+        </select>
       </label>
 
       {feedback?.error && (
@@ -75,7 +94,7 @@ export default function LoginForm() {
           disabled={pending}
           className="flex-1 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-zinc-900"
         >
-          {pending ? "…" : "Entrar"}
+          {pending ? "…" : t("login")}
         </button>
         <button
           type="button"
@@ -83,7 +102,7 @@ export default function LoginForm() {
           onClick={() => run(signup)}
           className="flex-1 rounded-md border border-black/15 px-3 py-2 text-sm font-medium disabled:opacity-60 dark:border-white/20"
         >
-          Crear cuenta
+          {t("signup")}
         </button>
       </div>
     </form>

@@ -110,6 +110,21 @@ PREVIO: ejecutar en Supabase SQL editor 0006_notes.sql (anade la columna `note`
 [ ] Tras crear una posicion desde el alta, el input se vacia (no se queda el
     texto anterior).
 
+--- Lote 6 (idioma EN/ES - primera tanda) ---
+
+[ ] En /login sale un selector "Idioma / Language" con Español / English.
+    Cambiarlo traduce el formulario en el sitio (h1, subtitulo, Email,
+    Contrasena, Entrar, Crear cuenta).
+[ ] Crear cuenta eligiendo "English" -> al entrar, /maps abre en ingles
+    ("My maps", "Sign out", "Create map", contadores "N positions - N
+    techniques"). La eleccion persiste (cookie NEXT_LOCALE, 1 año).
+[ ] En /maps hay un selector de idioma en la cabecera; cambiarlo recarga la
+    lista traducida. El editor (/maps/[id]) TODAVIA esta en espanol (pendiente).
+[ ] Errores de login/registro salen en el idioma activo ("Email y contrasena
+    son obligatorios." / "Email and password are required.").
+[ ] Sin cookie (primera visita) todo sale en espanol.
+[ ] La vista compartida /s/<token> sigue funcionando (aun sin traducir).
+
 --- Notas ---
 [ ] Confirmar que el form de tecnica no se siente sobrecargado con el campo
     "si fallas" + el bloque de enlace (colapsado por defecto).

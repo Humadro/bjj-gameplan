@@ -1,0 +1,40 @@
+{
+  "Metadata": {
+    "title": "BJJ Game Plan",
+    "description": "Tu mapa de juego de BJJ con auto-layout"
+  },
+  "LocaleSwitcher": {
+    "label": "Idioma"
+  },
+  "Setup": {
+    "title": "Falta configurar Supabase",
+    "body": "Rellena <code>web/.env.local</code> con la URL y la anon key de tu proyecto (Supabase → Settings → API) y reinicia <code>npm run dev</code>."
+  },
+  "Auth": {
+    "appName": "BJJ Game Plan",
+    "subtitle": "Entra con tu email para ver tu mapa.",
+    "email": "Email",
+    "password": "Contraseña",
+    "language": "Idioma",
+    "login": "Entrar",
+    "signup": "Crear cuenta",
+    "signupConfirmEmail": "Cuenta creada. Revisa tu email para confirmarla y luego inicia sesión.",
+    "errors": {
+      "credentialsRequired": "Email y contraseña son obligatorios.",
+      "passwordTooShort": "La contraseña debe tener al menos 6 caracteres."
+    }
+  },
+  "MapsList": {
+    "heading": "Mis mapas",
+    "signOut": "Salir",
+    "newMapPlaceholder": "Nombre del mapa nuevo (p. ej. No-gi, Competición…)",
+    "createMap": "Crear mapa",
+    "empty": "Aún no tienes ningún mapa. Crea el primero arriba.",
+    "counts": "{positions} posiciones · {techniques} técnicas",
+    "rename": "renombrar",
+    "delete": "borrar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirmDelete": "¿Borrar el mapa \"{name}\" y todo su contenido?"
+  }
+}
