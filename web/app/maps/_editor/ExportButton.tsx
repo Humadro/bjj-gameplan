@@ -134,7 +134,7 @@ export default function ExportButton({
           y += lineH;
         }
       }
-      pdf.save(`bjj-gameplan-${new Date().toISOString().slice(0, 10)}-lista.pdf`);
+      pdf.save(`bjj-gameplan-${new Date().toISOString().slice(0, 10)}-${t("listFilename")}.pdf`);
     } finally {
       setBusy(null);
     }

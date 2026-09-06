@@ -176,6 +176,7 @@
     "position": "Posición",
     "technique": "Técnica",
     "ficha": "Ficha PDF",
+    "fichaFilename": "ficha",
     "confirmDeletePosition": "¿Borrar \"{name}\" y sus técnicas de salida?",
     "positionSaved": "Posición guardada",
     "positionDeleted": "Posición borrada",
@@ -207,7 +208,8 @@
     "png": "PNG",
     "pdf": "PDF",
     "list": "Lista",
-    "listTitle": "Plan de juego como lista de texto (PDF)"
+    "listTitle": "Plan de juego como lista de texto (PDF)",
+    "listFilename": "lista"
   },
   "SeedPanel": {
     "emptyTitle": "“{name}” está vacío",

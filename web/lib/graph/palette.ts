@@ -63,7 +63,7 @@ export function parseLine(raw: string, maps: MapRef[]): ParsedLine {
   const text = raw.trim();
   if (!text) return { kind: "empty" };
 
-  const goto = text.match(/^ir(?:\s+a)?\s+(.+)$/i);
+  const goto = text.match(/^(?:ir(?:\s+a)?|go(?:\s+to)?)\s+(.+)$/i);
   if (goto) {
     const q = goto[1].trim().toLowerCase();
     const m = maps.find((x) => x.name.toLowerCase().includes(q));
@@ -72,13 +72,13 @@ export function parseLine(raw: string, maps: MapRef[]): ParsedLine {
       : { kind: "invalid", reason: "no-map", query: goto[1].trim() };
   }
 
-  const pos = text.match(/^(?:\+?pos|posici[oó]n)\s+(.+)$/i);
+  const pos = text.match(/^(?:\+?pos|posici[oó]n|position)\s+(.+)$/i);
   if (pos) {
     let name = pos[1].trim();
     let isBad = false;
-    if (/\bmala\b/i.test(name) || name.endsWith("!")) {
+    if (/\b(?:mala|bad)\b/i.test(name) || name.endsWith("!")) {
       isBad = true;
-      name = name.replace(/\bmala\b/i, "").replace(/!+$/, "").trim();
+      name = name.replace(/\b(?:mala|bad)\b/i, "").replace(/!+$/, "").trim();
     }
     return name
       ? { kind: "position", name, isBad }
@@ -87,7 +87,7 @@ export function parseLine(raw: string, maps: MapRef[]): ParsedLine {
 
   if (SEP_RE.test(text)) {
     const raw = text.split(SEP_RE);
-    raw[0] = raw[0].replace(/^desde\s+/i, "");
+    raw[0] = raw[0].replace(/^(?:desde|from)\s+/i, "");
     const segs = raw.map(stripTags);
 
     if (segs.some((s) => !s.text)) {
@@ -204,7 +204,7 @@ export type Tok = { text: string; bold?: boolean; muted?: boolean };
 // "desde X" -> "desde " normal, "X" en negrita. Sin "desde": espacios sueltos
 // normales, el resto en negrita (es un nombre de posición).
 function posTokens(seg: string): Tok[] {
-  const d = seg.match(/^(\s*)(desde\s+)(.*)$/i);
+  const d = seg.match(/^(\s*)((?:desde|from)\s+)(.*)$/i);
   if (d) return [{ text: d[1] + d[2] }, { text: d[3], bold: true }];
   const s = seg.match(/^(\s*)([\s\S]*)$/)!;
   return [{ text: s[1] }, { text: s[2], bold: true }];
@@ -215,10 +215,10 @@ function posTokens(seg: string): Tok[] {
 export function lineTokens(line: string): Tok[] {
   if (line.trim() === "") return [{ text: line }];
 
-  const pm = line.match(/^(\s*)(\+?pos|posici[oó]n)(\s+)([\s\S]*)$/i);
+  const pm = line.match(/^(\s*)(\+?pos|posici[oó]n|position)(\s+)([\s\S]*)$/i);
   if (pm) return [{ text: pm[1] + pm[2] + pm[3] }, { text: pm[4], bold: true }];
 
-  if (/^\s*ir(?:\s+a)?\s+/i.test(line)) return [{ text: line }];
+  if (/^\s*(?:ir(?:\s+a)?|go(?:\s+to)?)\s+/i.test(line)) return [{ text: line }];
 
   if (SEP_RE.test(line)) {
     const parts = line.split(SEP_SPLIT_RE);
@@ -264,7 +264,7 @@ export function activeSlot(
   const line = text.slice(lineStart, lineEnd);
   const cil = caret - lineStart;
 
-  if (/^\s*(?:\+?pos|posici[oó]n|ir)\b/i.test(line)) return null;
+  if (/^\s*(?:\+?pos|posici[oó]n|position|ir|go)\b/i.test(line)) return null;
 
   const before = line.slice(0, cil);
   const after = line.slice(cil);
@@ -280,7 +280,7 @@ export function activeSlot(
   const rawSlot = line.slice(fragStart, fragEnd);
   let nameOffset = rawSlot.length - rawSlot.trimStart().length;
   if (seps.length === 0) {
-    const dm = rawSlot.slice(nameOffset).match(/^desde\s+/i);
+    const dm = rawSlot.slice(nameOffset).match(/^(?:desde|from)\s+/i);
     if (dm) nameOffset += dm[0].length;
   }
   const namePart = rawSlot.slice(nameOffset);

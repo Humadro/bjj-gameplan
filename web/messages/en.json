@@ -176,6 +176,7 @@
     "position": "Position",
     "technique": "Technique",
     "ficha": "PDF card",
+    "fichaFilename": "card",
     "confirmDeletePosition": "Delete \"{name}\" and its outgoing techniques?",
     "positionSaved": "Position saved",
     "positionDeleted": "Position deleted",
@@ -207,7 +208,8 @@
     "png": "PNG",
     "pdf": "PDF",
     "list": "List",
-    "listTitle": "Game plan as a text list (PDF)"
+    "listTitle": "Game plan as a text list (PDF)",
+    "listFilename": "list"
   },
   "SeedPanel": {
     "emptyTitle": "“{name}” is empty",
@@ -243,9 +245,9 @@
     }
   },
   "Palette": {
-    "placeholder": "from half guard > hook, alta > x-guard > single leg, media > side control top\nfrom mount top > armbar, sub, alta\npos rubber guard mala",
+    "placeholder": "from half guard > hook, alta > x-guard > single leg, media > side control top\nfrom mount top > armbar, sub, alta\npos rubber guard bad",
     "oneLineHint": "One line per technique, position or chain. Enter creates everything · Shift+Enter new line · Esc closes.",
-    "cheatsheet": "technique: <c>desde X > name > Y</c> · confidence/submission per technique: <c>> name, alta</c> / <c>> name, sub</c> · chain: <c>A > t1 > B > t2 > C</c> · position: <c>pos name [mala]</c> · map: <c>ir name</c>",
+    "cheatsheet": "technique: <c>from X > name > Y</c> · confidence/submission per technique: <c>> name, alta</c> / <c>> name, sub</c> · chain: <c>A > t1 > B > t2 > C</c> · position: <c>pos name [bad]</c> · map: <c>go name</c>",
     "create": "Create",
     "creating": "Creating…",
     "review": "Check: {items}",

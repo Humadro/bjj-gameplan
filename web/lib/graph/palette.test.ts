@@ -86,6 +86,19 @@ describe("parseLine", () => {
       text: "kimura desde norte sur",
     });
   });
+
+  it("accepts English keyword synonyms (from / go / bad)", () => {
+    expect(parseLine("from half guard > hook > x-guard", maps)).toMatchObject({
+      kind: "techniques",
+      specs: [{ source: "half guard", name: "hook", dest: "x-guard" }],
+    });
+    expect(parseLine("pos mount bottom bad", maps)).toEqual({
+      kind: "position",
+      name: "mount bottom",
+      isBad: true,
+    });
+    expect(parseLine("go competi", maps)).toEqual({ kind: "goto", map: maps[1] });
+  });
 });
 
 describe("describe", () => {

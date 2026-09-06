@@ -70,7 +70,7 @@ export default function NodeInspector({
           y += 15;
         }
       }
-      pdf.save(`ficha-${p.name.toLowerCase().replace(/\s+/g, "-")}.pdf`);
+      pdf.save(`${t("fichaFilename")}-${p.name.toLowerCase().replace(/\s+/g, "-")}.pdf`);
     } finally {
       setCardBusy(false);
     }
