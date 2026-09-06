@@ -7,7 +7,7 @@ import { useToast } from "./Toast";
 import { TechniqueFields } from "./TechniquePanel";
 import ReferenceFieldset from "./ReferenceFieldset";
 import NoteField from "./NoteField";
-import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
+import CanonicalNameInput from "./CanonicalNameInput";
 import { buildPositionCardText } from "@/lib/graph/gameplan";
 import type { Position, Technique } from "@/lib/types";
 
@@ -86,11 +86,9 @@ export default function NodeInspector({
             });
           }}
         >
-          <input
-            name="name"
+          <CanonicalNameInput
             defaultValue={position.name}
             required
-            list={CANONICAL_POS_LIST_ID}
             className={inputCls}
           />
           <label className="flex items-center gap-2 text-xs text-zinc-500">

@@ -11,7 +11,7 @@ import {
 } from "./actions";
 import { useAction } from "./useAction";
 import { useToast } from "./Toast";
-import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
+import CanonicalNameInput from "./CanonicalNameInput";
 import ReferenceFieldset from "./ReferenceFieldset";
 import NoteField from "./NoteField";
 import type { Position, Technique } from "@/lib/types";
@@ -35,6 +35,8 @@ export default function PositionPanel({
   const toast = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [stdDone, setStdDone] = useState(false);
+  // Remonta el input del alta tras crear (es controlado: reset() no lo vacía).
+  const [formKey, setFormKey] = useState(0);
 
   const shown = matchPosIds ? positions.filter((p) => matchPosIds.has(p.id)) : positions;
 
@@ -101,15 +103,17 @@ export default function PositionPanel({
         className="flex flex-col gap-2 rounded-lg border border-black/10 p-3 dark:border-white/10"
         onSubmit={(e) => {
           e.preventDefault();
-          run(createPosition, new FormData(e.currentTarget), () => formRef.current?.reset());
+          run(createPosition, new FormData(e.currentTarget), () => {
+            formRef.current?.reset();
+            setFormKey((k) => k + 1);
+          });
         }}
       >
         <input type="hidden" name="map_id" value={mapId} />
-        <input
-          name="name"
+        <CanonicalNameInput
+          key={formKey}
           placeholder="Nueva posición"
           required
-          list={CANONICAL_POS_LIST_ID}
           className={inputCls}
         />
         <label className="flex items-center gap-2 text-xs text-zinc-500">
@@ -159,11 +163,9 @@ export default function PositionPanel({
                   run(updatePosition, fd, () => setEditingId(null));
                 }}
               >
-                <input
-                  name="name"
+                <CanonicalNameInput
                   defaultValue={p.name}
                   required
-                  list={CANONICAL_POS_LIST_ID}
                   className={inputCls}
                 />
                 <label className="flex items-center gap-2 text-xs text-zinc-500">

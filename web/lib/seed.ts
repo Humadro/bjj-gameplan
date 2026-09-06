@@ -69,14 +69,14 @@ const MAPA_EJEMPLO: SeedTemplate = {
     { key: "passing", name: "Passing" },
     { key: "fhl", name: "Front Headlock Bottom", isBad: true },
     { key: "sct", name: "Side Control Top" },
-    { key: "thg", name: "Top Half Guard" },
+    { key: "thg", name: "Half Guard Top" },
     { key: "turtle", name: "Turtle Top" },
     { key: "mount", name: "Mount Top" },
-    { key: "espalda", name: "Espalda" },
+    { key: "espalda", name: "Back Control" },
     { key: "mbottom", name: "Mount Bottom", isBad: true },
     { key: "scb", name: "Side Control Bottom", isBad: true },
-    { key: "bhg", name: "Bottom Half Guard" },
-    { key: "dogfight", name: "Dogfight" },
+    { key: "bhg", name: "Half Guard Bottom" },
+    { key: "dogfight", name: "Dogfight" }, // transición, sin equivalente canónico
   ],
   techniques: [
     // Standing
@@ -93,7 +93,7 @@ const MAPA_EJEMPLO: SeedTemplate = {
     // Side Control Top
     { name: "Knee on belly", from: "sct", to: "mount", confidence: "alta" },
     { name: "Twister pass", from: "sct", to: "mount", confidence: "alta" },
-    // Top Half Guard
+    // Half Guard Top
     { name: "Knee slice", from: "thg", to: "sct", confidence: "alta" },
     { name: "Cowcatcher", from: "thg", to: "sct", confidence: "media" },
     { name: "Pressure pass", from: "thg", to: "sct", confidence: "alta" },
@@ -106,7 +106,7 @@ const MAPA_EJEMPLO: SeedTemplate = {
     // Turtle Top
     { name: "Darce", from: "turtle", confidence: "media", submission: true },
     { name: "J chen backtake", from: "turtle", to: "espalda", confidence: "media" },
-    // Espalda
+    // Back Control
     { name: "RNC", from: "espalda", confidence: "media", submission: true },
     // Mount Bottom
     { name: "Elbow escape", from: "mbottom", to: "bhg", confidence: "alta" },
@@ -116,7 +116,7 @@ const MAPA_EJEMPLO: SeedTemplate = {
     { name: "Underhook bridge to top turtle", from: "scb", to: "turtle", confidence: "media" },
     { name: "Bridge to halfguard bottom", from: "scb", to: "bhg", confidence: "media" },
     { name: "Ghost escape", from: "scb", confidence: "baja" }, // sin salida a propósito
-    // Bottom Half Guard
+    // Half Guard Bottom
     { name: "Underhook to dogfight", from: "bhg", to: "dogfight", confidence: "alta" },
     { name: "Underhook to electric sweep", from: "bhg", to: "sct", confidence: "alta" },
     // Dogfight

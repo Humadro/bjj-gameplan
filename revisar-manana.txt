@@ -76,7 +76,7 @@
     boton "Ficha PDF" (A5, texto, esa posicion y sus salidas).
 [ ] Vista compartida /s/<token>: al hacer click en un nodo sigue abriendo solo
     el enlace de estudio (no el inspector). Sin toasts.
-[ ] `npm test` en web/ pasa (43 tests del nucleo puro).
+[ ] `npm test` en web/ pasa (52 tests del nucleo puro).
 
 --- Lote 4 (notas personales) ---
 
@@ -90,6 +90,25 @@ PREVIO: ejecutar en Supabase SQL editor 0006_notes.sql (anade la columna `note`
     o el "si fallas") NO borra la nota.
 [ ] Vista compartida /s/<token>: las notas NO aparecen y NO llegan en el JSON.
     Clonar un mapa compartido: la copia no trae notas.
+
+--- Lote 5 (nombre canonico: aviso suave + plantilla) ---
+
+[ ] Plantilla "Mapa de ejemplo": las posiciones ahora son "Half Guard Top",
+    "Half Guard Bottom" y "Back Control" (antes Top/Bottom Half Guard, Espalda).
+    "Dogfight" se queda (no tiene equivalente canonico). Cargar la plantilla y
+    comprobar que el grafo sigue bien conectado.
+[ ] Crear posicion escribiendo "espalda" / "montada" / "media guardia" /
+    "control lateral" / "side control bot" / "Mont Top" -> aparece debajo del
+    input un aviso ambar "Nombre estandar: X?" que al pulsarlo cambia el valor.
+    Ocurre en: alta de posicion, editar posicion (barra lateral), inspector de
+    nodo, y el campo "crear posicion nueva" del form de tecnica.
+[ ] El aviso NO bloquea: si escribo un nombre propio ("Mi X-guard rara") y no
+    hay parecido, no sale nada y se guarda tal cual.
+[ ] Escribir un nombre canonico exacto ("Back Control") -> no sale aviso.
+[ ] En la paleta ⌘K, mini-formulario: los campos "Desde" y "Lleva a" tambien
+    muestran el aviso suave.
+[ ] Tras crear una posicion desde el alta, el input se vacia (no se queda el
+    texto anterior).
 
 --- Notas ---
 [ ] Confirmar que el form de tecnica no se siente sobrecargado con el campo

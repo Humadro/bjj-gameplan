@@ -11,7 +11,7 @@ import {
 } from "./actions";
 import { useAction } from "./useAction";
 import { useToast } from "./Toast";
-import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
+import CanonicalNameInput from "./CanonicalNameInput";
 import ReferenceFieldset from "./ReferenceFieldset";
 import NoteField from "./NoteField";
 import { CANONICAL_POSITIONS } from "@/lib/seed";
@@ -92,11 +92,10 @@ function PositionSelect({
         <option value={NEW}>➕ Crear posición nueva…</option>
       </select>
       {isNew && (
-        <input
+        <CanonicalNameInput
           name={newName}
           autoFocus
           required
-          list={CANONICAL_POS_LIST_ID}
           placeholder="Nombre de la posición nueva"
           className={inputCls}
         />

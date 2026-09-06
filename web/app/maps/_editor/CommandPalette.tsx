@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPosition, createTechnique } from "./actions";
+import { CanonicalHint } from "./CanonicalNameInput";
 import { CANONICAL_POSITIONS } from "@/lib/seed";
 import {
   activeSlot,
@@ -485,6 +486,7 @@ function QuickForm({
         placeholder="Desde…"
         className={cls}
       />
+      <CanonicalHint value={source} onUse={setSource} />
       <input
         list="cp-pos"
         value={dest}
@@ -492,6 +494,7 @@ function QuickForm({
         placeholder="Lleva a… (opcional)"
         className={cls}
       />
+      <CanonicalHint value={dest} onUse={setDest} />
       <select
         value={confidence}
         onChange={(e) => setConfidence(e.currentTarget.value as Confidence)}
