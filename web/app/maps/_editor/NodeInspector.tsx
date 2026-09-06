@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { deletePosition, deleteTechnique, updatePosition, updateTechnique } from "./actions";
 import { useAction } from "./useAction";
 import { useToast } from "./Toast";
@@ -32,6 +33,11 @@ export default function NodeInspector({
 }) {
   const { pending, error, run } = useAction();
   const toast = useToast();
+  const t = useTranslations("Inspector");
+  const tc = useTranslations("Common");
+  const tp = useTranslations("Positions");
+  const gp = useTranslations("GamePlan");
+  const cf = useTranslations("Confidence");
   const [cardBusy, setCardBusy] = useState(false);
 
   const position = target.kind === "pos" ? positions.find((p) => p.id === target.id) : undefined;
@@ -41,7 +47,16 @@ export default function NodeInspector({
   async function exportCard(p: Position) {
     setCardBusy(true);
     try {
-      const text = buildPositionCardText(mapName, p, positions, techniques);
+      const text = buildPositionCardText(mapName, p, positions, techniques, {
+        planTitle: gp("planTitle"),
+        card: gp("card"),
+        badPosition: gp("badPosition"),
+        noOutgoing: gp("noOutgoing"),
+        submission: gp("submission"),
+        noExit: gp("noExit"),
+        onFail: gp("onFail"),
+        confidence: { alta: cf("alta"), media: cf("media"), baja: cf("baja") },
+      });
       const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ unit: "pt", format: "a5" });
       pdf.setFont("courier", "normal");
@@ -65,7 +80,7 @@ export default function NodeInspector({
     <div className="absolute right-0 top-0 z-20 flex h-full w-[360px] max-w-[85%] flex-col gap-3 overflow-y-auto border-l border-black/10 bg-white p-3 shadow-lg">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold">
-          {position ? "Posición" : "Técnica"}
+          {position ? t("position") : t("technique")}
         </p>
         <button onClick={onClose} className="rounded border border-black/15 px-2 py-0.5 text-xs hover:bg-black/5">
           ✕
@@ -81,7 +96,7 @@ export default function NodeInspector({
             fd.set("id", position.id);
             fd.set("map_id", mapId);
             run(updatePosition, fd, () => {
-              toast("Posición guardada");
+              toast(t("positionSaved"));
               onClose();
             });
           }}
@@ -93,7 +108,7 @@ export default function NodeInspector({
           />
           <label className="flex items-center gap-2 text-xs text-zinc-500">
             <input type="checkbox" name="is_bad" defaultChecked={position.is_bad} />
-            Posición mala / bottom
+            {tp("badCheckboxShort")}
           </label>
           <ReferenceFieldset reference={position} />
           <NoteField note={position.note} />
@@ -104,7 +119,7 @@ export default function NodeInspector({
               disabled={pending}
               className="rounded-md bg-zinc-900 px-3 py-1 text-xs text-white disabled:opacity-60"
             >
-              Guardar
+              {tc("save")}
             </button>
             <button
               type="button"
@@ -112,24 +127,24 @@ export default function NodeInspector({
               onClick={() => exportCard(position)}
               className="rounded-md border border-black/15 px-3 py-1 text-xs hover:bg-black/5 disabled:opacity-60"
             >
-              {cardBusy ? "…" : "Ficha PDF"}
+              {cardBusy ? "…" : t("ficha")}
             </button>
             <button
               type="button"
               disabled={pending}
               onClick={() => {
-                if (!confirm(`¿Borrar "${position.name}" y sus técnicas de salida?`)) return;
+                if (!confirm(t("confirmDeletePosition", { name: position.name }))) return;
                 const fd = new FormData();
                 fd.set("id", position.id);
                 fd.set("map_id", mapId);
                 run(deletePosition, fd, () => {
-                  toast("Posición borrada");
+                  toast(t("positionDeleted"));
                   onClose();
                 });
               }}
               className="rounded-md border border-red-300 px-3 py-1 text-xs text-red-600 hover:bg-red-50"
             >
-              Borrar
+              {tc("delete")}
             </button>
           </div>
         </form>
@@ -144,7 +159,7 @@ export default function NodeInspector({
             fd.set("id", technique.id);
             fd.set("map_id", mapId);
             run(updateTechnique, fd, () => {
-              toast("Técnica guardada");
+              toast(t("techniqueSaved"));
               onClose();
             });
           }}
@@ -157,7 +172,7 @@ export default function NodeInspector({
               disabled={pending}
               className="rounded-md bg-zinc-900 px-3 py-1 text-xs text-white disabled:opacity-60"
             >
-              Guardar
+              {tc("save")}
             </button>
             <button
               type="button"
@@ -167,13 +182,13 @@ export default function NodeInspector({
                 fd.set("id", technique.id);
                 fd.set("map_id", mapId);
                 run(deleteTechnique, fd, () => {
-                  toast("Técnica borrada");
+                  toast(t("techniqueDeleted"));
                   onClose();
                 });
               }}
               className="rounded-md border border-red-300 px-3 py-1 text-xs text-red-600 hover:bg-red-50"
             >
-              Borrar
+              {tc("delete")}
             </button>
           </div>
         </form>

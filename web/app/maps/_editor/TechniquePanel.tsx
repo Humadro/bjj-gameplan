@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   bulkDeleteTechniques,
   bulkSetConfidence,
@@ -17,7 +18,6 @@ import NoteField from "./NoteField";
 import { CANONICAL_POSITIONS } from "@/lib/seed";
 import {
   CONFIDENCE_COLOR,
-  CONFIDENCE_LABEL,
   type Confidence,
   type Position,
   type Technique,
@@ -55,6 +55,7 @@ function PositionSelect({
   emptyLabel: string;
 }) {
   const [isNew, setIsNew] = useState(false);
+  const t = useTranslations("Techniques");
   const newName = NEW_FIELD[name];
 
   // Canónicas que aún no están en el mapa: se pueden elegir aquí y se crean al
@@ -80,23 +81,23 @@ function PositionSelect({
           </option>
         ))}
         {canonExtra.length > 0 && (
-          <optgroup label="Estándar (No-Gi) · se crea al guardar">
+          <optgroup label={t("standardOptgroup")}>
             {canonExtra.map((c) => (
               <option key={c.name} value={`__name__:${c.name}`}>
                 {c.name}
-                {c.isBad ? " (bottom)" : ""}
+                {c.isBad ? t("bottomSuffix") : ""}
               </option>
             ))}
           </optgroup>
         )}
-        <option value={NEW}>➕ Crear posición nueva…</option>
+        <option value={NEW}>{t("createNewOption")}</option>
       </select>
       {isNew && (
         <CanonicalNameInput
           name={newName}
           autoFocus
           required
-          placeholder="Nombre de la posición nueva"
+          placeholder={t("newPositionName")}
           className={inputCls}
         />
       )}
@@ -112,24 +113,26 @@ export function TechniqueFields({
   technique?: Technique;
 }) {
   const [isSubmission, setIsSubmission] = useState(technique?.is_submission ?? false);
+  const t = useTranslations("Techniques");
+  const cf = useTranslations("Confidence");
 
   return (
     <>
       <input
         name="name"
-        placeholder="Nombre de la técnica"
+        placeholder={t("namePlaceholder")}
         defaultValue={technique?.name}
         required
         className={inputCls}
       />
 
       <PositionSelect
-        label="Desde"
+        label={t("from")}
         name="source_position_id"
         positions={positions}
         defaultValue={technique?.source_position_id ?? ""}
         required
-        emptyLabel="Elige posición de origen"
+        emptyLabel={t("fromEmpty")}
       />
 
       <label className="flex items-center gap-2 text-xs text-zinc-500">
@@ -139,32 +142,30 @@ export function TechniqueFields({
           defaultChecked={technique?.is_submission ?? false}
           onChange={(e) => setIsSubmission(e.currentTarget.checked)}
         />
-        Es una sumisión (caja, no lleva a otra posición)
+        {t("isSubmission")}
       </label>
 
       {!isSubmission && (
         <PositionSelect
-          label="Lleva a"
+          label={t("leadsTo")}
           name="destination_position_id"
           positions={positions}
           defaultValue={technique?.destination_position_id ?? ""}
-          emptyLabel="(ninguna / callejón sin salida)"
+          emptyLabel={t("leadsToEmpty")}
         />
       )}
 
       <PositionSelect
-        label="Si fallas, acabas en… (opcional)"
+        label={t("onFailLabel")}
         name="fail_position_id"
         positions={positions}
         defaultValue={technique?.fail_position_id ?? ""}
-        emptyLabel="(sigues en la misma posición)"
+        emptyLabel={t("onFailEmpty")}
       />
-      <p className="-mt-1 text-[11px] leading-snug text-zinc-400">
-        Plan B: si esta técnica no sale, ¿a qué posición sueles ir a parar?
-      </p>
+      <p className="-mt-1 text-[11px] leading-snug text-zinc-400">{t("planBHint")}</p>
 
       <label className="flex flex-col gap-1 text-xs text-zinc-500">
-        Confianza
+        {t("confidence")}
         <select
           name="confidence"
           defaultValue={technique?.confidence ?? "media"}
@@ -172,7 +173,7 @@ export function TechniqueFields({
         >
           {(["alta", "media", "baja"] as const).map((c) => (
             <option key={c} value={c}>
-              {CONFIDENCE_LABEL[c]}
+              {cf(c)}
             </option>
           ))}
         </select>
@@ -198,6 +199,9 @@ export default function TechniquePanel({
   const formRef = useRef<HTMLFormElement>(null);
   const { pending, error, run } = useAction();
   const toast = useToast();
+  const t = useTranslations("Techniques");
+  const tc = useTranslations("Common");
+  const cf = useTranslations("Confidence");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -223,16 +227,16 @@ export default function TechniquePanel({
     setPicked(new Set());
   }
 
-  function removeTechnique(t: Technique) {
+  function removeTechnique(tq: Technique) {
     const fd = new FormData();
-    fd.set("id", t.id);
+    fd.set("id", tq.id);
     fd.set("map_id", mapId);
     run(deleteTechnique, fd, () => {
       toast({
-        message: `Borrada «${t.name}»`,
+        message: t("deletedOne", { name: tq.name }),
         action: {
-          label: "Deshacer",
-          onClick: () => run(() => restoreRows(mapId, { techniques: [t] }), new FormData()),
+          label: tc("undo"),
+          onClick: () => run(() => restoreRows(mapId, { techniques: [tq] }), new FormData()),
         },
       });
     });
@@ -241,20 +245,20 @@ export default function TechniquePanel({
   function bulkConf(confidence: Confidence) {
     const ids = [...picked];
     run(() => bulkSetConfidence(mapId, ids, confidence), new FormData(), () => {
-      toast(`${ids.length} técnica(s) a confianza ${confidence}`);
+      toast(t("bulkConfDone", { count: ids.length, conf: cf(confidence) }));
       endSelect();
     });
   }
 
   function bulkRemove() {
     const ids = [...picked];
-    const rows = techniques.filter((t) => picked.has(t.id));
+    const rows = techniques.filter((x) => picked.has(x.id));
     run(() => bulkDeleteTechniques(mapId, ids), new FormData(), () => {
       endSelect();
       toast({
-        message: `Borradas ${ids.length} técnica(s)`,
+        message: t("deletedMany", { count: ids.length }),
         action: {
-          label: "Deshacer",
+          label: tc("undo"),
           onClick: () => run(() => restoreRows(mapId, { techniques: rows }), new FormData()),
         },
       });
@@ -264,7 +268,7 @@ export default function TechniquePanel({
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-        Técnicas
+        {t("heading")}
       </h2>
 
       <form
@@ -282,7 +286,7 @@ export default function TechniquePanel({
           disabled={pending}
           className="self-start rounded-md bg-zinc-900 px-3 py-1 text-sm text-white disabled:opacity-60 dark:bg-white dark:text-zinc-900"
         >
-          Añadir técnica
+          {t("addButton")}
         </button>
       </form>
 
@@ -296,11 +300,11 @@ export default function TechniquePanel({
               onClick={() => setSelecting(true)}
               className="rounded border border-black/15 px-2 py-0.5 hover:bg-black/5"
             >
-              Seleccionar…
+              {t("selectMode")}
             </button>
           ) : (
             <>
-              <span className="text-zinc-500">{picked.size} elegidas ·</span>
+              <span className="text-zinc-500">{t("chosenCount", { count: picked.size })}</span>
               {(["alta", "media", "baja"] as const).map((c) => (
                 <button
                   key={c}
@@ -310,7 +314,7 @@ export default function TechniquePanel({
                   className="rounded border border-black/15 px-1.5 py-0.5 hover:bg-black/5 disabled:opacity-50"
                   style={{ color: CONFIDENCE_COLOR[c] }}
                 >
-                  {CONFIDENCE_LABEL[c]}
+                  {cf(c)}
                 </button>
               ))}
               <button
@@ -319,14 +323,14 @@ export default function TechniquePanel({
                 onClick={bulkRemove}
                 className="rounded border border-red-300 px-1.5 py-0.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
               >
-                Borrar
+                {tc("delete")}
               </button>
               <button
                 type="button"
                 onClick={endSelect}
                 className="rounded border border-black/15 px-1.5 py-0.5 hover:bg-black/5"
               >
-                Salir
+                {t("exitSelect")}
               </button>
             </>
           )}
@@ -334,73 +338,73 @@ export default function TechniquePanel({
       )}
 
       <ul className="flex flex-col gap-1">
-        {shown.map((t) =>
-          editingId === t.id ? (
-            <li key={t.id} className="rounded-md border border-black/10 p-2 dark:border-white/10">
+        {shown.map((tq) =>
+          editingId === tq.id ? (
+            <li key={tq.id} className="rounded-md border border-black/10 p-2 dark:border-white/10">
               <form
                 className="flex flex-col gap-2"
                 onSubmit={(e) => {
                   e.preventDefault();
                   const fd = new FormData(e.currentTarget);
-                  fd.set("id", t.id);
+                  fd.set("id", tq.id);
                   fd.set("map_id", mapId);
                   run(updateTechnique, fd, () => setEditingId(null));
                 }}
               >
-                <TechniqueFields positions={positions} technique={t} />
+                <TechniqueFields positions={positions} technique={tq} />
                 <div className="flex gap-2">
                   <button
                     type="submit"
                     disabled={pending}
                     className="rounded-md bg-zinc-900 px-2 py-1 text-xs text-white dark:bg-white dark:text-zinc-900"
                   >
-                    Guardar
+                    {tc("save")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingId(null)}
                     className="rounded-md border border-black/15 px-2 py-1 text-xs dark:border-white/20"
                   >
-                    Cancelar
+                    {tc("cancel")}
                   </button>
                 </div>
               </form>
             </li>
           ) : (
             <li
-              key={t.id}
+              key={tq.id}
               className="flex items-center justify-between gap-2 rounded-md border border-black/10 px-2 py-1 text-sm dark:border-white/10"
             >
               {selecting && (
                 <input
                   type="checkbox"
-                  checked={picked.has(t.id)}
-                  onChange={() => togglePick(t.id)}
+                  checked={picked.has(tq.id)}
+                  onChange={() => togglePick(tq.id)}
                   className="shrink-0"
                 />
               )}
               <span className="min-w-0 flex-1">
-                <span style={{ color: CONFIDENCE_COLOR[t.confidence] }}>{t.name}</span>
+                <span style={{ color: CONFIDENCE_COLOR[tq.confidence] }}>{tq.name}</span>
                 <span className="block truncate text-xs text-zinc-500">
-                  {posName.get(t.source_position_id) ?? "?"}
+                  {posName.get(tq.source_position_id) ?? "?"}
                   {" → "}
-                  {t.is_submission
-                    ? "sumisión"
-                    : t.destination_position_id
-                      ? (posName.get(t.destination_position_id) ?? "?")
+                  {tq.is_submission
+                    ? t("submissionShort")
+                    : tq.destination_position_id
+                      ? (posName.get(tq.destination_position_id) ?? "?")
                       : "—"}
                 </span>
               </span>
               {!selecting && (
                 <span className="flex shrink-0 gap-2 text-xs">
-                  <button onClick={() => setEditingId(t.id)} className="text-zinc-500 hover:underline">
-                    editar
+                  <button onClick={() => setEditingId(tq.id)} className="text-zinc-500 hover:underline">
+                    {tc("edit")}
                   </button>
                   <button
-                    onClick={() => removeTechnique(t)}
+                    onClick={() => removeTechnique(tq)}
                     className="text-red-600 hover:underline"
                   >
-                    borrar
+                    {tc("deleteLower")}
                   </button>
                 </span>
               )}
@@ -408,10 +412,10 @@ export default function TechniquePanel({
           ),
         )}
         {techniques.length === 0 && (
-          <li className="text-xs text-zinc-500">Todavía no hay técnicas.</li>
+          <li className="text-xs text-zinc-500">{t("emptyList")}</li>
         )}
         {techniques.length > 0 && shown.length === 0 && (
-          <li className="text-xs text-zinc-500">Ninguna técnica encaja con el filtro.</li>
+          <li className="text-xs text-zinc-500">{t("noneMatch")}</li>
         )}
       </ul>
     </section>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { createPosition, seedMap } from "./actions";
 import { useAction } from "./useAction";
 import { FULL_TEMPLATES, SMALL_TEMPLATES, SUGGESTED_POSITIONS } from "@/lib/seed";
@@ -12,6 +13,8 @@ export default function SeedPanel({
   mapName: string;
 }) {
   const { pending, error, run } = useAction();
+  const t = useTranslations("SeedPanel");
+  const tt = useTranslations("Templates");
 
   function addPosition(name: string, isBad?: boolean) {
     const fd = new FormData();
@@ -31,13 +34,8 @@ export default function SeedPanel({
   return (
     <div className="h-full overflow-y-auto bg-white p-8">
       <div className="mx-auto w-full max-w-lg">
-        <h2 className="text-lg font-semibold">
-          &ldquo;{mapName}&rdquo; está vacío
-        </h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          Añade una posición por la que empieces tus combates. El árbol crece solo a
-          partir de ahí.
-        </p>
+        <h2 className="text-lg font-semibold">{t("emptyTitle", { name: mapName })}</h2>
+        <p className="mt-1 text-sm text-zinc-500">{t("emptyDesc")}</p>
 
         {/* Chips: añadir una posición suelta de un clic */}
         <div className="mt-5 flex flex-wrap gap-2">
@@ -59,41 +57,41 @@ export default function SeedPanel({
 
         {/* Plantillas pequeñas y temáticas */}
         <h3 className="mt-8 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          O empieza con un mini-plan
+          {t("orMiniPlan")}
         </h3>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {SMALL_TEMPLATES.map((t) => (
+          {SMALL_TEMPLATES.map((tpl) => (
             <button
-              key={t.id}
+              key={tpl.id}
               disabled={pending}
-              onClick={() => loadTemplate(t.id)}
+              onClick={() => loadTemplate(tpl.id)}
               className="rounded-lg border border-black/15 p-3 text-left transition-colors hover:border-black/40 disabled:opacity-60"
             >
-              <span className="block text-sm font-semibold">{t.label}</span>
-              <span className="mt-0.5 block text-xs text-zinc-500">{t.description}</span>
+              <span className="block text-sm font-semibold">{tt(`${tpl.id}.label`)}</span>
+              <span className="mt-0.5 block text-xs text-zinc-500">{tt(`${tpl.id}.description`)}</span>
             </button>
           ))}
         </div>
 
         {/* Plantillas completas */}
         <h3 className="mt-8 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          Plantillas completas
+          {t("fullTemplates")}
         </h3>
         <div className="mt-3 flex flex-col gap-2">
-          {FULL_TEMPLATES.map((t) => (
+          {FULL_TEMPLATES.map((tpl) => (
             <button
-              key={t.id}
+              key={tpl.id}
               disabled={pending}
-              onClick={() => loadTemplate(t.id)}
+              onClick={() => loadTemplate(tpl.id)}
               className="rounded-lg border border-black/15 p-3 text-left transition-colors hover:border-black/40 disabled:opacity-60"
             >
-              <span className="block text-sm font-semibold">{t.label}</span>
-              <span className="mt-0.5 block text-xs text-zinc-500">{t.description}</span>
+              <span className="block text-sm font-semibold">{tt(`${tpl.id}.label`)}</span>
+              <span className="mt-0.5 block text-xs text-zinc-500">{tt(`${tpl.id}.description`)}</span>
             </button>
           ))}
         </div>
 
-        {pending && <p className="mt-4 text-xs text-zinc-500">Guardando…</p>}
+        {pending && <p className="mt-4 text-xs text-zinc-500">{t("saving")}</p>}
         {error && <p className="mt-4 text-xs text-red-600">{error}</p>}
       </div>
     </div>

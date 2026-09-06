@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import LocaleSwitcher from "../../LocaleSwitcher";
 import { getRef } from "@/lib/graph/refs";
 import type { Position, Technique } from "@/lib/types";
 import CanonicalPositionsDatalist from "./CanonicalPositionsDatalist";
@@ -32,8 +34,9 @@ export default function EditorBody({
   positions: Position[];
   techniques: Technique[];
 }) {
+  const t = useTranslations("Common");
   const hasRoutedTechnique = techniques.some(
-    (t) => t.is_submission || t.destination_position_id !== null,
+    (x) => x.is_submission || x.destination_position_id !== null,
   );
 
   const [filter, setFilter] = useState<MapFilter>(emptyFilter);
@@ -42,12 +45,12 @@ export default function EditorBody({
   const match = useMemo(() => {
     const q = filter.q.trim().toLowerCase();
     const techIds = new Set<string>();
-    for (const t of techniques) {
-      if (q && !t.name.toLowerCase().includes(q)) continue;
-      if (filter.conf.size > 0 && !filter.conf.has(t.confidence)) continue;
-      if (filter.withRef && !getRef(t)) continue;
-      if (filter.subsOnly && !t.is_submission) continue;
-      techIds.add(t.id);
+    for (const tech of techniques) {
+      if (q && !tech.name.toLowerCase().includes(q)) continue;
+      if (filter.conf.size > 0 && !filter.conf.has(tech.confidence)) continue;
+      if (filter.withRef && !getRef(tech)) continue;
+      if (filter.subsOnly && !tech.is_submission) continue;
+      techIds.add(tech.id);
     }
     // Una posición cuenta si su nombre encaja con el texto o si toca una técnica
     // que ha pasado el filtro (origen / destino / plan B).
@@ -55,11 +58,11 @@ export default function EditorBody({
     for (const p of positions) {
       if (q && p.name.toLowerCase().includes(q)) posIds.add(p.id);
     }
-    for (const t of techniques) {
-      if (!techIds.has(t.id)) continue;
-      posIds.add(t.source_position_id);
-      if (t.destination_position_id) posIds.add(t.destination_position_id);
-      if (t.fail_position_id) posIds.add(t.fail_position_id);
+    for (const tech of techniques) {
+      if (!techIds.has(tech.id)) continue;
+      posIds.add(tech.source_position_id);
+      if (tech.destination_position_id) posIds.add(tech.destination_position_id);
+      if (tech.fail_position_id) posIds.add(tech.fail_position_id);
     }
     // Nodos del grafo a mantener brillantes.
     const nodeIds = new Set<string>();
@@ -73,11 +76,14 @@ export default function EditorBody({
       <aside className="flex w-80 shrink-0 flex-col gap-5 overflow-y-auto border-r border-black/10 p-4">
         <header className="flex items-center justify-between gap-2">
           <MapSwitcher mapId={mapId} maps={maps} />
-          <form action="/auth/signout" method="post">
-            <button className="text-xs text-zinc-500 hover:underline" title={email}>
-              Salir
-            </button>
-          </form>
+          <div className="flex items-center gap-2">
+            <LocaleSwitcher />
+            <form action="/auth/signout" method="post">
+              <button className="text-xs text-zinc-500 hover:underline" title={email}>
+                {t("signOut")}
+              </button>
+            </form>
+          </div>
         </header>
 
         <MapFilterBar value={filter} onChange={setFilter} />

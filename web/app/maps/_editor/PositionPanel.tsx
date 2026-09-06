@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   addStandardPositions,
   createPosition,
@@ -33,6 +34,8 @@ export default function PositionPanel({
   const formRef = useRef<HTMLFormElement>(null);
   const { pending, error, run } = useAction();
   const toast = useToast();
+  const t = useTranslations("Positions");
+  const tc = useTranslations("Common");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [stdDone, setStdDone] = useState(false);
   // Remonta el input del alta tras crear (es controlado: reset() no lo vacía).
@@ -54,10 +57,10 @@ export default function PositionPanel({
       toast({
         message:
           count > 0
-            ? `Borrada «${p.name}» y ${count} técnica(s)`
-            : `Borrada «${p.name}»`,
+            ? t("deletedWithCount", { name: p.name, count })
+            : t("deletedNoCount", { name: p.name }),
         action: {
-          label: "Deshacer",
+          label: tc("undo"),
           onClick: () => {
             run(
               () =>
@@ -95,7 +98,7 @@ export default function PositionPanel({
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-        Posiciones
+        {t("heading")}
       </h2>
 
       <form
@@ -112,13 +115,13 @@ export default function PositionPanel({
         <input type="hidden" name="map_id" value={mapId} />
         <CanonicalNameInput
           key={formKey}
-          placeholder="Nueva posición"
+          placeholder={t("newPlaceholder")}
           required
           className={inputCls}
         />
         <label className="flex items-center gap-2 text-xs text-zinc-500">
           <input type="checkbox" name="is_bad" />
-          Posición mala / bottom (flechas en rojo)
+          {t("badCheckbox")}
         </label>
         <ReferenceFieldset />
         <NoteField />
@@ -127,7 +130,7 @@ export default function PositionPanel({
           disabled={pending}
           className="self-start rounded-md bg-zinc-900 px-3 py-1 text-sm text-white disabled:opacity-60 dark:bg-white dark:text-zinc-900"
         >
-          Añadir posición
+          {t("addButton")}
         </button>
       </form>
 
@@ -138,13 +141,10 @@ export default function PositionPanel({
           disabled={pending}
           className="self-start rounded-md border border-black/15 px-2 py-1 text-xs hover:bg-black/5 disabled:opacity-60 dark:border-white/20"
         >
-          + Añadir posiciones estándar (No-Gi)
+          {t("addStandard")}
         </button>
-        <p className="text-[11px] leading-snug text-zinc-400">
-          Carga el vocabulario canónico. Las que ya tengas se omiten y ninguna
-          aparece en el mapa hasta que le cuelgues una técnica.
-        </p>
-        {stdDone && <p className="text-[11px] text-green-700">Vocabulario cargado.</p>}
+        <p className="text-[11px] leading-snug text-zinc-400">{t("addStandardHint")}</p>
+        {stdDone && <p className="text-[11px] text-green-700">{t("vocabLoaded")}</p>}
       </div>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
@@ -170,7 +170,7 @@ export default function PositionPanel({
                 />
                 <label className="flex items-center gap-2 text-xs text-zinc-500">
                   <input type="checkbox" name="is_bad" defaultChecked={p.is_bad} />
-                  Posición mala / bottom
+                  {t("badCheckboxShort")}
                 </label>
                 <ReferenceFieldset reference={p} />
                 <NoteField note={p.note} />
@@ -180,14 +180,14 @@ export default function PositionPanel({
                     disabled={pending}
                     className="rounded-md bg-zinc-900 px-2 py-1 text-xs text-white dark:bg-white dark:text-zinc-900"
                   >
-                    Guardar
+                    {tc("save")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingId(null)}
                     className="rounded-md border border-black/15 px-2 py-1 text-xs dark:border-white/20"
                   >
-                    Cancelar
+                    {tc("cancel")}
                   </button>
                 </div>
               </form>
@@ -200,26 +200,26 @@ export default function PositionPanel({
               <span className={p.is_bad ? "text-red-600" : undefined}>{p.name}</span>
               <span className="flex gap-2 text-xs">
                 <button onClick={() => setEditingId(p.id)} className="text-zinc-500 hover:underline">
-                  editar
+                  {tc("edit")}
                 </button>
                 <button
                   onClick={() => {
-                    if (!confirm(`¿Borrar "${p.name}" y sus técnicas de salida?`)) return;
+                    if (!confirm(t("confirmDelete", { name: p.name }))) return;
                     removePosition(p);
                   }}
                   className="text-red-600 hover:underline"
                 >
-                  borrar
+                  {tc("deleteLower")}
                 </button>
               </span>
             </li>
           ),
         )}
         {positions.length === 0 && (
-          <li className="text-xs text-zinc-500">Todavía no hay posiciones.</li>
+          <li className="text-xs text-zinc-500">{t("emptyList")}</li>
         )}
         {positions.length > 0 && shown.length === 0 && (
-          <li className="text-xs text-zinc-500">Ninguna posición encaja con el filtro.</li>
+          <li className="text-xs text-zinc-500">{t("noneMatch")}</li>
         )}
       </ul>
     </section>

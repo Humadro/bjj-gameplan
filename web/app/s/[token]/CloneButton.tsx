@@ -2,9 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { cloneSharedMap } from "@/app/maps/actions";
 
 export default function CloneButton({ token }: { token: string }) {
+  const t = useTranslations("Clone");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const pathname = usePathname();
@@ -29,7 +31,7 @@ export default function CloneButton({ token }: { token: string }) {
         }
         className="rounded-md border border-black/15 bg-white px-2 py-1 text-xs shadow-sm hover:bg-black/5 disabled:opacity-60"
       >
-        {pending ? "Copiando…" : "Copiar a mi cuenta"}
+        {pending ? t("copying") : t("copyToAccount")}
       </button>
     </span>
   );

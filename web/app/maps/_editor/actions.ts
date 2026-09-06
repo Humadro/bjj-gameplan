@@ -1,11 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { CANONICAL_POSITIONS, getTemplate } from "@/lib/seed";
 import type { Confidence, Position, Technique } from "@/lib/types";
 
-export type ActionResult = { error?: string };
+export type ActionResult = { error?: string; code?: string };
+
+// Atajo: traducciones del namespace de errores (cacheado por request).
+async function E(key: string, values?: Record<string, string | number>) {
+  return (await getTranslations("Errors"))(key, values);
+}
 
 const CONFIDENCES: Confidence[] = ["alta", "media", "baja"];
 
@@ -70,13 +76,13 @@ function done(mapId: string): ActionResult {
 
 export async function createPosition(formData: FormData): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const mapId = str(formData, "map_id");
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
 
   const name = str(formData, "name");
-  if (!name) return { error: "El nombre de la posición es obligatorio." };
+  if (!name) return { error: await E("positionNameRequired") };
 
   const { error } = await supabase
     .from("positions")
@@ -91,7 +97,8 @@ export async function createPosition(formData: FormData): Promise<ActionResult> 
 
   if (error) {
     return {
-      error: error.code === "23505" ? "Ya hay una posición con ese nombre en este mapa." : error.message,
+      error: error.code === "23505" ? await E("positionNameTaken") : error.message,
+      code: error.code === "23505" ? "duplicate" : undefined,
     };
   }
   return done(mapId);
@@ -104,10 +111,10 @@ export async function addStandardPositions(
   formData: FormData,
 ): Promise<ActionResult & { added?: number }> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const mapId = str(formData, "map_id");
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
 
   const { data: existing, error: readError } = await supabase
     .from("positions")
@@ -132,15 +139,15 @@ export async function addStandardPositions(
 
 export async function updatePosition(formData: FormData): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const mapId = str(formData, "map_id");
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
 
   const id = str(formData, "id");
   const name = str(formData, "name");
-  if (!id) return { error: "Falta el id de la posición." };
-  if (!name) return { error: "El nombre de la posición es obligatorio." };
+  if (!id) return { error: await E("missingPositionId") };
+  if (!name) return { error: await E("positionNameRequired") };
 
   const { error } = await supabase
     .from("positions")
@@ -150,7 +157,7 @@ export async function updatePosition(formData: FormData): Promise<ActionResult> 
 
   if (error) {
     return {
-      error: error.code === "23505" ? "Ya hay una posición con ese nombre en este mapa." : error.message,
+      error: error.code === "23505" ? await E("positionNameTaken") : error.message,
     };
   }
   return done(mapId);
@@ -158,13 +165,13 @@ export async function updatePosition(formData: FormData): Promise<ActionResult> 
 
 export async function deletePosition(formData: FormData): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const mapId = str(formData, "map_id");
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
 
   const id = str(formData, "id");
-  if (!id) return { error: "Falta el id de la posición." };
+  if (!id) return { error: await E("missingPositionId") };
 
   // Las técnicas que salían de aquí caen por ON DELETE CASCADE;
   // las que desembocaban aquí quedan con destino NULL (ON DELETE SET NULL).
@@ -218,7 +225,7 @@ async function resolvePositionId(
     .select("id")
     .single();
   if (error || !created) {
-    return { error: error?.message ?? "No se pudo crear la posición nueva." };
+    return { error: error?.message ?? (await E("newPositionFailed")) };
   }
   return { id: created.id };
 }
@@ -233,8 +240,8 @@ async function buildTechniqueValues(
   const confidence = str(formData, "confidence") as Confidence;
   const is_submission = bool(formData, "is_submission");
 
-  if (!name) return { error: "El nombre de la técnica es obligatorio." as const };
-  if (!CONFIDENCES.includes(confidence)) return { error: "Confianza no válida." as const };
+  if (!name) return { error: await E("techniqueNameRequired") };
+  if (!CONFIDENCES.includes(confidence)) return { error: await E("invalidConfidence") };
 
   const source = await resolvePositionId(
     supabase,
@@ -244,7 +251,7 @@ async function buildTechniqueValues(
     str(formData, "source_position_new"),
   );
   if ("error" in source) return { error: source.error };
-  if (!source.id) return { error: "Elige o crea la posición de origen." as const };
+  if (!source.id) return { error: await E("sourcePositionRequired") };
 
   let destinationId: string | null = null;
   if (!is_submission) {
@@ -287,10 +294,10 @@ async function buildTechniqueValues(
 
 export async function createTechnique(formData: FormData): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const mapId = str(formData, "map_id");
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
 
   const parsed = await buildTechniqueValues(supabase, user.id, mapId, formData);
   if ("error" in parsed) return { error: parsed.error };
@@ -305,13 +312,13 @@ export async function createTechnique(formData: FormData): Promise<ActionResult>
 
 export async function updateTechnique(formData: FormData): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const mapId = str(formData, "map_id");
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
 
   const id = str(formData, "id");
-  if (!id) return { error: "Falta el id de la técnica." };
+  if (!id) return { error: await E("missingTechniqueId") };
 
   const parsed = await buildTechniqueValues(supabase, user.id, mapId, formData);
   if ("error" in parsed) return { error: parsed.error };
@@ -328,13 +335,13 @@ export async function updateTechnique(formData: FormData): Promise<ActionResult>
 
 export async function deleteTechnique(formData: FormData): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const mapId = str(formData, "map_id");
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
 
   const id = str(formData, "id");
-  if (!id) return { error: "Falta el id de la técnica." };
+  if (!id) return { error: await E("missingTechniqueId") };
 
   const { error } = await supabase.from("techniques").delete().eq("id", id).eq("map_id", mapId);
   if (error) return { error: error.message };
@@ -351,9 +358,9 @@ export async function bulkSetConfidence(
   confidence: Confidence,
 ): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
-  if (!CONFIDENCES.includes(confidence)) return { error: "Confianza no válida." };
+  if (!user) return { error: await E("notAuthenticated") };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
+  if (!CONFIDENCES.includes(confidence)) return { error: await E("invalidConfidence") };
   if (ids.length === 0) return {};
 
   const { error } = await supabase
@@ -371,8 +378,8 @@ export async function bulkDeleteTechniques(
   ids: string[],
 ): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!user) return { error: await E("notAuthenticated") };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
   if (ids.length === 0) return {};
 
   const { error } = await supabase
@@ -392,8 +399,8 @@ export async function restoreRows(
   rows: { positions?: Position[]; techniques?: Technique[] },
 ): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!user) return { error: await E("notAuthenticated") };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
 
   const positions = rows.positions ?? [];
   if (positions.length > 0) {
@@ -443,8 +450,8 @@ export async function relinkTechniques(
   patches: { id: string; destination_position_id?: string; fail_position_id?: string }[],
 ): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!user) return { error: await E("notAuthenticated") };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
 
   for (const p of patches) {
     const patch: Record<string, string> = {};
@@ -465,13 +472,13 @@ export async function relinkTechniques(
 
 export async function seedMap(formData: FormData): Promise<ActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const mapId = str(formData, "map_id");
-  if (!(await ownsMap(supabase, mapId))) return { error: "Mapa no válido." };
+  if (!(await ownsMap(supabase, mapId))) return { error: await E("invalidMap") };
 
   const template = getTemplate(str(formData, "template_id"));
-  if (!template) return { error: "Plantilla desconocida." };
+  if (!template) return { error: await E("unknownTemplate") };
 
   // Idempotente: solo si este mapa está vacío.
   const { count, error: countError } = await supabase
@@ -480,7 +487,7 @@ export async function seedMap(formData: FormData): Promise<ActionResult> {
     .eq("map_id", mapId);
   if (countError) return { error: countError.message };
   if ((count ?? 0) > 0) {
-    return { error: "Este mapa ya tiene posiciones; una plantilla solo se carga sobre un mapa vacío." };
+    return { error: await E("mapNotEmpty") };
   }
 
   const { data: insertedPositions, error: posError } = await supabase
@@ -495,7 +502,7 @@ export async function seedMap(formData: FormData): Promise<ActionResult> {
     )
     .select("id, name");
   if (posError || !insertedPositions) {
-    return { error: posError?.message ?? "No se pudieron crear las posiciones." };
+    return { error: posError?.message ?? (await E("positionsCreateFailed")) };
   }
 
   if (template.techniques.length > 0) {
@@ -526,7 +533,7 @@ export async function seedMap(formData: FormData): Promise<ActionResult> {
     const { error: techError } = await supabase.from("techniques").insert(rows);
     if (techError) {
       revalidatePath(`/maps/${mapId}`);
-      return { error: `Posiciones creadas, pero fallaron las técnicas: ${techError.message}` };
+      return { error: await E("templateTechniquesFailed", { message: techError.message }) };
     }
   }
 

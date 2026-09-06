@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { getNodesBounds, useReactFlow } from "@xyflow/react";
 import { buildGamePlanText } from "@/lib/graph/gameplan";
 import type { Position, Technique } from "@/lib/types";
@@ -29,6 +30,9 @@ export default function ExportButton({
   techniques?: Technique[];
 }) {
   const { getNodes } = useReactFlow();
+  const t = useTranslations("Export");
+  const gp = useTranslations("GamePlan");
+  const cf = useTranslations("Confidence");
   const [busy, setBusy] = useState<null | "png" | "pdf" | "lista">(null);
 
   async function render() {
@@ -101,7 +105,16 @@ export default function ExportButton({
   async function exportLista() {
     setBusy("lista");
     try {
-      const text = buildGamePlanText(mapName, positions, techniques);
+      const text = buildGamePlanText(mapName, positions, techniques, {
+        planTitle: gp("planTitle"),
+        card: gp("card"),
+        badPosition: gp("badPosition"),
+        noOutgoing: gp("noOutgoing"),
+        submission: gp("submission"),
+        noExit: gp("noExit"),
+        onFail: gp("onFail"),
+        confidence: { alta: cf("alta"), media: cf("media"), baja: cf("baja") },
+      });
       const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ unit: "pt", format: "a4" });
       pdf.setFont("courier", "normal");
@@ -134,22 +147,22 @@ export default function ExportButton({
         disabled={busy !== null}
         className="rounded-md border border-black/15 bg-white px-2 py-1 text-xs shadow-sm hover:bg-black/5 disabled:opacity-60"
       >
-        {busy === "png" ? "…" : "PNG"}
+        {busy === "png" ? "…" : t("png")}
       </button>
       <button
         onClick={exportPdf}
         disabled={busy !== null}
         className="rounded-md border border-black/15 bg-white px-2 py-1 text-xs shadow-sm hover:bg-black/5 disabled:opacity-60"
       >
-        {busy === "pdf" ? "…" : "PDF"}
+        {busy === "pdf" ? "…" : t("pdf")}
       </button>
       <button
         onClick={exportLista}
         disabled={busy !== null}
-        title="Plan de juego como lista de texto (PDF)"
+        title={t("listTitle")}
         className="rounded-md border border-black/15 bg-white px-2 py-1 text-xs shadow-sm hover:bg-black/5 disabled:opacity-60"
       >
-        {busy === "lista" ? "…" : "Lista"}
+        {busy === "lista" ? "…" : t("list")}
       </button>
     </div>
   );

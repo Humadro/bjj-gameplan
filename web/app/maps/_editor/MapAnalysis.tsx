@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { analyzeMap } from "@/lib/graph/analysis";
 import type { Position, Technique } from "@/lib/types";
 
@@ -15,6 +16,7 @@ export default function MapAnalysis({
   positions: Position[];
   techniques: Technique[];
 }) {
+  const t = useTranslations("Analysis");
   const gaps = useMemo(
     () => analyzeMap(positions, techniques),
     [positions, techniques],
@@ -29,17 +31,16 @@ export default function MapAnalysis({
   return (
     <section className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs">
       <h2 className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-        Huecos en tu plan
+        {t("title")}
       </h2>
 
       {gaps.deadEndBad.length > 0 && (
         <div>
           <p className="font-medium text-red-700">
-            Sin escape ({gaps.deadEndBad.length})
+            {t("noEscapeTitle", { count: gaps.deadEndBad.length })}
           </p>
           <p className="text-zinc-600">
-            Posiciones malas sin ninguna técnica de salida:{" "}
-            {gaps.deadEndBad.map((p) => p.name).join(", ")}.
+            {t("noEscapeBody", { names: gaps.deadEndBad.map((p) => p.name).join(", ") })}
           </p>
         </div>
       )}
@@ -47,11 +48,10 @@ export default function MapAnalysis({
       {gaps.deadEndGood.length > 0 && (
         <div>
           <p className="font-medium text-amber-700">
-            Posiciones muertas ({gaps.deadEndGood.length})
+            {t("deadPosTitle", { count: gaps.deadEndGood.length })}
           </p>
           <p className="text-zinc-600">
-            Llegas aquí pero no sales a ningún sitio:{" "}
-            {gaps.deadEndGood.map((p) => p.name).join(", ")}.
+            {t("deadPosBody", { names: gaps.deadEndGood.map((p) => p.name).join(", ") })}
           </p>
         </div>
       )}
@@ -59,12 +59,13 @@ export default function MapAnalysis({
       {gaps.noPlanB.length > 0 && (
         <div>
           <p className="font-medium text-amber-700">
-            Sin plan B ({gaps.noPlanB.length})
+            {t("noPlanBTitle", { count: gaps.noPlanB.length })}
           </p>
           <p className="text-zinc-600">
-            Técnicas sin definir a dónde vas si fallan:{" "}
-            {gaps.noPlanB.slice(0, 6).map((t) => t.name).join(", ")}
-            {gaps.noPlanB.length > 6 ? "…" : ""}.
+            {t("noPlanBBody", {
+              names: gaps.noPlanB.slice(0, 6).map((t) => t.name).join(", "),
+              more: gaps.noPlanB.length > 6 ? "…" : "",
+            })}
           </p>
         </div>
       )}

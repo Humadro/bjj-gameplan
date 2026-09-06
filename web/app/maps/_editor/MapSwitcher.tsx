@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 export default function MapSwitcher({
@@ -11,6 +12,7 @@ export default function MapSwitcher({
   maps: { id: string; name: string }[];
 }) {
   const router = useRouter();
+  const t = useTranslations("MapSwitcher");
 
   return (
     <div className="flex items-center gap-1">
@@ -28,7 +30,7 @@ export default function MapSwitcher({
       <Link
         href="/maps"
         className="rounded-md border border-black/15 px-2 py-1 text-xs text-zinc-600 hover:bg-black/5"
-        title="Todos los mapas"
+        title={t("allMapsTitle")}
       >
         ⋯
       </Link>

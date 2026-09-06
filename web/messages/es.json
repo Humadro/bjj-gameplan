@@ -6,6 +6,26 @@
   "LocaleSwitcher": {
     "label": "Idioma"
   },
+  "Common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "delete": "Borrar",
+    "deleteLower": "borrar",
+    "edit": "editar",
+    "rename": "renombrar",
+    "add": "Añadir",
+    "back": "Volver",
+    "undo": "Deshacer",
+    "clear": "limpiar ✕",
+    "signOut": "Salir",
+    "loading": "…"
+  },
+  "Confidence": {
+    "alta": "Alta",
+    "media": "Media",
+    "baja": "Baja"
+  },
   "Setup": {
     "title": "Falta configurar Supabase",
     "body": "Rellena <code>web/.env.local</code> con la URL y la anon key de tu proyecto (Supabase → Settings → API) y reinicia <code>npm run dev</code>."
@@ -36,5 +56,254 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "confirmDelete": "¿Borrar el mapa \"{name}\" y todo su contenido?"
+  },
+  "Editor": {
+    "signOut": "Salir"
+  },
+  "Filter": {
+    "placeholder": "Filtrar por nombre…",
+    "confTitle": "Confianza {conf}",
+    "withRefTitle": "Solo con enlace de estudio",
+    "subsOnlyTitle": "Solo sumisiones",
+    "clear": "limpiar ✕"
+  },
+  "MapSwitcher": {
+    "allMapsTitle": "Todos los mapas"
+  },
+  "Legend": {
+    "chip": "❔ Leyenda",
+    "confidence": "· confianza de la técnica",
+    "posToTech": "posición → su técnica",
+    "techToPos": "técnica → posición a la que lleva",
+    "toBadPosition": "lleva a una posición mala (bottom)",
+    "planB": "«si fallas» → plan B",
+    "boxIsSubmission": "caja = sumisión",
+    "ballIsPosition": "bola = posición",
+    "collapseHint": "–/+N en una bola: plegar / desplegar sus técnicas"
+  },
+  "Onboarding": {
+    "title": "Primeros pasos",
+    "hide": "ocultar",
+    "step1": "Crea tu primera posición",
+    "step2": "Añade una técnica desde ella",
+    "step3": "Di a qué posición te lleva (o márcala como sumisión)"
+  },
+  "Analysis": {
+    "title": "Huecos en tu plan",
+    "noEscapeTitle": "Sin escape ({count})",
+    "noEscapeBody": "Posiciones malas sin ninguna técnica de salida: {names}.",
+    "deadPosTitle": "Posiciones muertas ({count})",
+    "deadPosBody": "Llegas aquí pero no sales a ningún sitio: {names}.",
+    "noPlanBTitle": "Sin plan B ({count})",
+    "noPlanBBody": "Técnicas sin definir a dónde vas si fallan: {names}{more}."
+  },
+  "Share": {
+    "share": "Compartir",
+    "shared": "Compartido ✓",
+    "readonlyTitle": "Enlace de solo lectura",
+    "sharedDesc": "Cualquiera con el enlace ve este mapa (no puede editarlo).",
+    "notSharedDesc": "Genera un enlace para que otros vean este mapa sin cuenta.",
+    "copy": "Copiar",
+    "copied": "✓",
+    "disable": "Desactivar enlace",
+    "regenerate": "Regenerar",
+    "createLink": "Crear enlace"
+  },
+  "Clone": {
+    "copyToAccount": "Copiar a mi cuenta",
+    "copying": "Copiando…"
+  },
+  "Public": {
+    "readOnly": "Solo lectura · BJJ Game Plan"
+  },
+  "Positions": {
+    "heading": "Posiciones",
+    "newPlaceholder": "Nueva posición",
+    "addButton": "Añadir posición",
+    "badCheckbox": "Posición mala / bottom (flechas en rojo)",
+    "badCheckboxShort": "Posición mala / bottom",
+    "addStandard": "+ Añadir posiciones estándar (No-Gi)",
+    "addStandardHint": "Carga el vocabulario canónico. Las que ya tengas se omiten y ninguna aparece en el mapa hasta que le cuelgues una técnica.",
+    "vocabLoaded": "Vocabulario cargado.",
+    "confirmDelete": "¿Borrar \"{name}\" y sus técnicas de salida?",
+    "emptyList": "Todavía no hay posiciones.",
+    "noneMatch": "Ninguna posición encaja con el filtro.",
+    "deletedWithCount": "Borrada «{name}» y {count} técnica(s)",
+    "deletedNoCount": "Borrada «{name}»"
+  },
+  "Techniques": {
+    "heading": "Técnicas",
+    "namePlaceholder": "Nombre de la técnica",
+    "from": "Desde",
+    "fromEmpty": "Elige posición de origen",
+    "isSubmission": "Es una sumisión (caja, no lleva a otra posición)",
+    "leadsTo": "Lleva a",
+    "leadsToEmpty": "(ninguna / callejón sin salida)",
+    "onFailLabel": "Si fallas, acabas en… (opcional)",
+    "onFailEmpty": "(sigues en la misma posición)",
+    "planBHint": "Plan B: si esta técnica no sale, ¿a qué posición sueles ir a parar?",
+    "confidence": "Confianza",
+    "addButton": "Añadir técnica",
+    "selectMode": "Seleccionar…",
+    "chosenCount": "{count} elegidas ·",
+    "exitSelect": "Salir",
+    "emptyList": "Todavía no hay técnicas.",
+    "noneMatch": "Ninguna técnica encaja con el filtro.",
+    "submissionShort": "sumisión",
+    "deletedOne": "Borrada «{name}»",
+    "deletedMany": "Borradas {count} técnica(s)",
+    "bulkConfDone": "{count} técnica(s) a confianza {conf}",
+    "newPositionName": "Nombre de la posición nueva",
+    "createNewOption": "➕ Crear posición nueva…",
+    "standardOptgroup": "Estándar (No-Gi) · se crea al guardar",
+    "bottomSuffix": " (bottom)"
+  },
+  "Reference": {
+    "summary": "Enlace de estudio (opcional)",
+    "urlPlaceholder": "https://youtu.be/…",
+    "labelPlaceholder": "Etiqueta (p.ej. Danaher, ep.3)",
+    "secondsPlaceholder": "seg.",
+    "secondsTitle": "Segundo de inicio (solo YouTube)"
+  },
+  "Note": {
+    "summary": "Nota personal (opcional)",
+    "placeholder": "Solo para ti: detalles, recordatorios, con quién falló…"
+  },
+  "Canonical": {
+    "standardName": "Nombre estándar:"
+  },
+  "Inspector": {
+    "position": "Posición",
+    "technique": "Técnica",
+    "ficha": "Ficha PDF",
+    "confirmDeletePosition": "¿Borrar \"{name}\" y sus técnicas de salida?",
+    "positionSaved": "Posición guardada",
+    "positionDeleted": "Posición borrada",
+    "techniqueSaved": "Técnica guardada",
+    "techniqueDeleted": "Técnica borrada"
+  },
+  "Canvas": {
+    "emptyNoPositions": "Añade tu primera posición para empezar a construir el mapa.",
+    "emptyNoLinks": "Ninguna posición está vinculada todavía. Crea una técnica que salga de una posición para que aparezca en el mapa.",
+    "focus": "Enfocar",
+    "focusAll": "(todo)",
+    "modeUp": "llegan aquí ↑",
+    "modeDown": "salen de aquí ↓",
+    "modeMain": "vía principal ★",
+    "modeTitle": "Cambiar modo: llegan aquí / salen de aquí / vía principal (árbol de alta confianza que entra y sale)",
+    "clearFocus": "Quitar enfoque",
+    "expandAll": "desplegar todo ({count})",
+    "expandAllTitle": "Desplegar todas",
+    "refBadge": "Tiene enlace de estudio",
+    "noteBadge": "Tiene una nota personal",
+    "showNTechniques": "Mostrar {count} técnica(s)",
+    "collapseThis": "Plegar esta posición"
+  },
+  "RefDrawer": {
+    "notEmbeddable": "Enlace externo (no es un vídeo de YouTube embebible).",
+    "openLink": "Abrir enlace ↗"
+  },
+  "Export": {
+    "png": "PNG",
+    "pdf": "PDF",
+    "list": "Lista",
+    "listTitle": "Plan de juego como lista de texto (PDF)"
+  },
+  "SeedPanel": {
+    "emptyTitle": "“{name}” está vacío",
+    "emptyDesc": "Añade una posición por la que empieces tus combates. El árbol crece solo a partir de ahí.",
+    "orMiniPlan": "O empieza con un mini-plan",
+    "fullTemplates": "Plantillas completas",
+    "saving": "Guardando…"
+  },
+  "Templates": {
+    "de-pie": {
+      "label": "De pie",
+      "description": "3 posiciones · derribos hasta Side Control."
+    },
+    "pasar-guardia": {
+      "label": "Pasando la guardia",
+      "description": "4 posiciones · pases hasta montada."
+    },
+    "juego-abajo": {
+      "label": "Juego de abajo",
+      "description": "5 posiciones · barridas para salir de abajo."
+    },
+    "ataques-montada": {
+      "label": "Ataques desde montada",
+      "description": "2 posiciones · finalizaciones y paso a la espalda."
+    },
+    "posiciones-base": {
+      "label": "Posiciones base",
+      "description": "~20 posiciones canónicas con las bottom marcadas. Sin técnicas: tú las cuelgas."
+    },
+    "mapa-ejemplo": {
+      "label": "Mapa de ejemplo",
+      "description": "Port completo del Mapa_Juego_BJJ.dot: ~13 posiciones y ~31 técnicas para editar."
+    }
+  },
+  "Palette": {
+    "placeholder": "desde media guardia > gancho, alta > x-guard > single leg, media > side control top\ndesde mount top > armbar, sub, alta\npos rubber guard mala",
+    "oneLineHint": "Una línea por técnica, posición o cadena. Enter crea todo · Shift+Enter salto de línea · Esc cierra.",
+    "cheatsheet": "técnica: <c>desde X > nombre > Y</c> · confianza/sumisión por técnica: <c>> nombre, alta</c> / <c>> nombre, sub</c> · cadena: <c>A > t1 > B > t2 > C</c> · posición: <c>pos nombre [mala]</c> · mapa: <c>ir nombre</c>",
+    "create": "Crear",
+    "creating": "Creando…",
+    "review": "Revisa: {items}",
+    "moreEntries": "+{count} más…",
+    "suggestHint": "↹ Tab completa · ↑↓ mueve · Esc oculta",
+    "previewPosition": "posición «{name}»",
+    "previewPositionBad": "posición «{name}» (mala)",
+    "previewGoto": "ir al mapa «{name}»",
+    "previewPhrase": "«{text}» · Enter abre el formulario",
+    "previewSubmission": "sumisión",
+    "previewNoDest": "(sin destino)",
+    "previewChain": "cadena ({count}): {summary}",
+    "invalidNoMap": "Ningún mapa contiene «{query}»",
+    "invalidNoPositionName": "Falta el nombre de la posición",
+    "invalidEmptySegment": "Hay un tramo vacío en la cadena",
+    "invalidNoTechniqueName": "Falta el nombre de la técnica",
+    "flashCreated": "✓ {parts}",
+    "flashTechniques": "{count, plural, one {# técnica} other {# técnicas}}",
+    "flashPositions": "{count, plural, one {# posición} other {# posiciones}}",
+    "flashNothing": "nada que crear",
+    "quickName": "Nombre de la técnica",
+    "quickFrom": "Desde…",
+    "quickTo": "Lleva a… (opcional)",
+    "quickAdd": "Añadir",
+    "quickBack": "Volver"
+  },
+  "GamePlan": {
+    "planTitle": "Plan de juego",
+    "card": "FICHA",
+    "badPosition": "posicion mala",
+    "noOutgoing": "(sin tecnicas de salida)",
+    "submission": "sumision",
+    "noExit": "(sin salida)",
+    "onFail": "si fallas"
+  },
+  "Errors": {
+    "notAuthenticated": "No autenticado.",
+    "invalidMap": "Mapa no válido.",
+    "emptyName": "El nombre no puede estar vacío.",
+    "missingMapId": "Falta el id del mapa.",
+    "mapCreateFailed": "No se pudo crear el mapa.",
+    "untitledMap": "Mapa sin nombre",
+    "missingLink": "Falta el enlace.",
+    "linkGone": "Ese enlace ya no existe.",
+    "copyPositionsFailed": "Fallo al copiar posiciones.",
+    "copyTechniquesFailed": "Mapa copiado, pero fallaron las técnicas: {message}",
+    "positionNameRequired": "El nombre de la posición es obligatorio.",
+    "positionNameTaken": "Ya hay una posición con ese nombre en este mapa.",
+    "missingPositionId": "Falta el id de la posición.",
+    "newPositionFailed": "No se pudo crear la posición nueva.",
+    "techniqueNameRequired": "El nombre de la técnica es obligatorio.",
+    "invalidConfidence": "Confianza no válida.",
+    "sourcePositionRequired": "Elige o crea la posición de origen.",
+    "missingTechniqueId": "Falta el id de la técnica.",
+    "unknownTemplate": "Plantilla desconocida.",
+    "mapNotEmpty": "Este mapa ya tiene posiciones; una plantilla solo se carga sobre un mapa vacío.",
+    "positionsCreateFailed": "No se pudieron crear las posiciones.",
+    "templateTechniquesFailed": "Posiciones creadas, pero fallaron las técnicas: {message}",
+    "copyOf": "Copia de {name}"
   }
 }

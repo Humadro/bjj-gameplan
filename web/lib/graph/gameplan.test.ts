@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { buildGamePlanText, buildPositionCardText } from "./gameplan";
+import { buildGamePlanText, buildPositionCardText, type GamePlanLabels } from "./gameplan";
 import { pos, tech } from "./fixtures";
+
+const L: GamePlanLabels = {
+  planTitle: "Plan de juego",
+  card: "FICHA",
+  badPosition: "posicion mala",
+  noOutgoing: "(sin tecnicas de salida)",
+  submission: "sumision",
+  noExit: "(sin salida)",
+  onFail: "si fallas",
+  confidence: { alta: "Alta", media: "Media", baja: "Baja" },
+};
 
 describe("buildGamePlanText", () => {
   const positions = [pos("a", "Guardia"), pos("b", "Montada"), pos("c", "Side Bottom", true)];
@@ -10,21 +21,21 @@ describe("buildGamePlanText", () => {
   ];
 
   it("one section per position, in map order", () => {
-    const txt = buildGamePlanText("Mi Plan", positions, techniques);
+    const txt = buildGamePlanText("Mi Plan", positions, techniques, L);
     expect(txt).toContain("MI PLAN");
     expect(txt.indexOf("[o] Guardia")).toBeLessThan(txt.indexOf("[o] Montada"));
     expect(txt).toContain("[v] Side Bottom  (posicion mala)");
   });
 
   it("shows confidence, destination, submission and 'si fallas'", () => {
-    const txt = buildGamePlanText("P", positions, techniques);
+    const txt = buildGamePlanText("P", positions, techniques, L);
     expect(txt).toContain("- Barrido  [Alta]  -> Montada");
     expect(txt).toContain("x si fallas -> Side Bottom");
     expect(txt).toContain("- Armbar  [Media]  sumision");
   });
 
   it("marks positions with no outgoing technique", () => {
-    const txt = buildGamePlanText("P", positions, techniques);
+    const txt = buildGamePlanText("P", positions, techniques, L);
     expect(txt).toContain("(sin tecnicas de salida)");
   });
 });
@@ -38,7 +49,7 @@ describe("buildPositionCardText", () => {
   ];
 
   it("only lists the given position's outgoing techniques", () => {
-    const txt = buildPositionCardText("Plan", positions[0], positions, techniques);
+    const txt = buildPositionCardText("Plan", positions[0], positions, techniques, L);
     expect(txt).toContain("PLAN · FICHA");
     expect(txt).toContain("Guardia");
     expect(txt).toContain("- Barrido  [Alta]  -> Montada");
@@ -48,7 +59,7 @@ describe("buildPositionCardText", () => {
   });
 
   it("handles a position with no outgoing technique", () => {
-    const txt = buildPositionCardText("Plan", positions[2], positions, techniques);
+    const txt = buildPositionCardText("Plan", positions[2], positions, techniques, L);
     expect(txt).toContain("Side  (posicion mala)");
     expect(txt).toContain("(sin tecnicas de salida)");
   });

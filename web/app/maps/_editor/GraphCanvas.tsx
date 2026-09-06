@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import {
   Background,
   Controls,
@@ -32,10 +33,11 @@ type CollapseInfo = {
 };
 
 function RefBadge() {
+  const t = useTranslations("Canvas");
   return (
     <span
       className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] shadow ring-1 ring-black/10"
-      title="Tiene enlace de estudio"
+      title={t("refBadge")}
     >
       🔗
     </span>
@@ -43,10 +45,11 @@ function RefBadge() {
 }
 
 function NoteBadge() {
+  const t = useTranslations("Canvas");
   return (
     <span
       className="absolute -left-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] shadow ring-1 ring-black/10"
-      title="Tiene una nota personal"
+      title={t("noteBadge")}
     >
       📝
     </span>
@@ -54,6 +57,7 @@ function NoteBadge() {
 }
 
 function PositionNode({ data }: NodeProps) {
+  const t = useTranslations("Canvas");
   const d = data as PositionNodeData & CollapseInfo;
   const collapsed = (d.hiddenCount ?? 0) > 0;
   const collapsible = collapsed || (d.outgoing ?? 0) > 0;
@@ -79,7 +83,7 @@ function PositionNode({ data }: NodeProps) {
             e.stopPropagation();
             d.onToggleCollapse!();
           }}
-          title={collapsed ? `Mostrar ${d.hiddenCount} técnica(s)` : "Plegar esta posición"}
+          title={collapsed ? t("showNTechniques", { count: d.hiddenCount ?? 0 }) : t("collapseThis")}
           className="absolute -bottom-1.5 left-1/2 flex h-4 min-w-4 -translate-x-1/2 items-center justify-center rounded-full border border-black/15 bg-white px-1 text-[9px] font-bold leading-none text-zinc-600 shadow hover:bg-black/5"
         >
           {collapsed ? `+${d.hiddenCount}` : "–"}
@@ -135,6 +139,7 @@ const nodeTypes = {
 type SelectedRef = { title: string; ref: RefInfo };
 
 function RefDrawer({ selected, onClose }: { selected: SelectedRef; onClose: () => void }) {
+  const t = useTranslations("RefDrawer");
   const embed = youtubeEmbedUrl(selected.ref.url, selected.ref.startSeconds);
   return (
     <div className="absolute right-0 top-0 z-20 flex h-full w-[360px] max-w-[85%] flex-col gap-3 border-l border-black/10 bg-white p-3 shadow-lg">
@@ -164,7 +169,7 @@ function RefDrawer({ selected, onClose }: { selected: SelectedRef; onClose: () =
           />
         </div>
       ) : (
-        <p className="text-xs text-zinc-500">Enlace externo (no es un vídeo de YouTube embebible).</p>
+        <p className="text-xs text-zinc-500">{t("notEmbeddable")}</p>
       )}
 
       <a
@@ -173,7 +178,7 @@ function RefDrawer({ selected, onClose }: { selected: SelectedRef; onClose: () =
         rel="noopener noreferrer nofollow"
         className="self-start rounded-md border border-black/15 px-2 py-1 text-xs hover:bg-black/5"
       >
-        Abrir enlace ↗
+        {t("openLink")}
       </a>
     </div>
   );
@@ -195,6 +200,7 @@ export default function GraphCanvas({
   // Si se pasa, se atenúa todo lo que no esté en el set (filtro del mapa).
   highlightIds?: Set<string> | null;
 }) {
+  const t = useTranslations("Canvas");
   // Nodo abierto en el inspector (editar/borrar). Solo si el mapa es editable.
   const [inspect, setInspect] = useState<{ kind: "pos" | "tech"; id: string } | null>(null);
   // Enfoque: resaltar los caminos que llegan a (o salen de) una posición, o la
@@ -327,9 +333,7 @@ export default function GraphCanvas({
   if (nodes.length === 0) {
     return (
       <div className="flex h-full items-center justify-center bg-white px-6 text-center text-sm text-zinc-500">
-        {positions.length === 0
-          ? "Añade tu primera posición para empezar a construir el mapa."
-          : "Ninguna posición está vinculada todavía. Crea una técnica que salga de una posición para que aparezca en el mapa."}
+        {positions.length === 0 ? t("emptyNoPositions") : t("emptyNoLinks")}
       </div>
     );
   }
@@ -355,13 +359,13 @@ export default function GraphCanvas({
       <MiniMap pannable zoomable />
       <Panel position="top-left" className="flex flex-col items-start gap-1">
         <div className="flex items-center gap-1 rounded-md border border-black/10 bg-white/95 px-2 py-1 text-xs shadow-sm">
-          <span className="text-zinc-500">Enfocar</span>
+          <span className="text-zinc-500">{t("focus")}</span>
           <select
             value={focusId}
             onChange={(e) => setFocusId(e.currentTarget.value)}
             className="max-w-[10rem] rounded border border-black/15 px-1 py-0.5"
           >
-            <option value="">(todo)</option>
+            <option value="">{t("focusAll")}</option>
             {focusablePositions.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -375,18 +379,14 @@ export default function GraphCanvas({
                   setDir((d) => (d === "up" ? "down" : d === "down" ? "principal" : "up"))
                 }
                 className="rounded border border-black/15 px-1 py-0.5 hover:bg-black/5"
-                title="Cambiar modo: llegan aquí / salen de aquí / vía principal (árbol de alta confianza que entra y sale)"
+                title={t("modeTitle")}
               >
-                {dir === "up"
-                  ? "llegan aquí ↑"
-                  : dir === "down"
-                    ? "salen de aquí ↓"
-                    : "vía principal ★"}
+                {dir === "up" ? t("modeUp") : dir === "down" ? t("modeDown") : t("modeMain")}
               </button>
               <button
                 onClick={() => setFocusId("")}
                 className="rounded border border-black/15 px-1 py-0.5 hover:bg-black/5"
-                title="Quitar enfoque"
+                title={t("clearFocus")}
               >
                 ✕
               </button>
@@ -396,9 +396,9 @@ export default function GraphCanvas({
             <button
               onClick={() => setCollapsed(new Set())}
               className="rounded border border-black/15 px-1 py-0.5 hover:bg-black/5"
-              title="Desplegar todas"
+              title={t("expandAllTitle")}
             >
-              desplegar todo ({collapsed.size})
+              {t("expandAll", { count: collapsed.size })}
             </button>
           )}
         </div>

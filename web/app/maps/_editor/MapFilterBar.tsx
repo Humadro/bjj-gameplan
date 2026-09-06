@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { CONFIDENCE_COLOR, type Confidence } from "@/lib/types";
 
 export type MapFilter = {
@@ -31,6 +32,8 @@ export default function MapFilterBar({
   value: MapFilter;
   onChange: (f: MapFilter) => void;
 }) {
+  const t = useTranslations("Filter");
+  const cf = useTranslations("Confidence");
   const active = filterActive(value);
 
   function toggleConf(c: Confidence) {
@@ -50,7 +53,7 @@ export default function MapFilterBar({
       <input
         value={value.q}
         onChange={(e) => onChange({ ...value, q: e.currentTarget.value })}
-        placeholder="Filtrar por nombre…"
+        placeholder={t("placeholder")}
         className="min-w-0 flex-1 rounded-md border border-black/15 px-2 py-1 text-xs"
       />
       {CONFS.map((c) => (
@@ -58,17 +61,17 @@ export default function MapFilterBar({
           key={c}
           type="button"
           onClick={() => toggleConf(c)}
-          title={`Confianza ${c}`}
+          title={t("confTitle", { conf: cf(c) })}
           className={chip(value.conf.has(c))}
           style={value.conf.has(c) ? undefined : { color: CONFIDENCE_COLOR[c] }}
         >
-          {c}
+          {cf(c)}
         </button>
       ))}
       <button
         type="button"
         onClick={() => onChange({ ...value, withRef: !value.withRef })}
-        title="Solo con enlace de estudio"
+        title={t("withRefTitle")}
         className={chip(value.withRef)}
       >
         🔗
@@ -76,7 +79,7 @@ export default function MapFilterBar({
       <button
         type="button"
         onClick={() => onChange({ ...value, subsOnly: !value.subsOnly })}
-        title="Solo sumisiones"
+        title={t("subsOnlyTitle")}
         className={chip(value.subsOnly)}
       >
         ◻
@@ -87,7 +90,7 @@ export default function MapFilterBar({
           onClick={() => onChange(emptyFilter)}
           className="rounded border border-black/15 px-1.5 py-0.5 text-[11px] leading-none hover:bg-black/5"
         >
-          limpiar ✕
+          {t("clear")}
         </button>
       )}
     </div>

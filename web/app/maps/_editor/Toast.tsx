@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useTranslations } from "next-intl";
 
 type ToastAction = { label: string; onClick: () => void };
 type ToastInput = { message: string; tone?: "ok" | "error"; action?: ToastAction; duration?: number };
@@ -23,6 +24,7 @@ export function useToast(): ToastFn {
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const tc = useTranslations("Common");
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
 
@@ -71,7 +73,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <button
               onClick={() => remove(t.id)}
               className="shrink-0 text-zinc-400 hover:text-zinc-700"
-              aria-label="Cerrar"
+              aria-label={tc("close")}
             >
               ✕
             </button>

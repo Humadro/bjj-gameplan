@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import GraphCanvas from "@/app/maps/_editor/GraphCanvas";
@@ -15,6 +16,7 @@ export default async function SharedMapPage({
 }) {
   if (!hasSupabaseEnv) return <SetupNotice />;
 
+  const t = await getTranslations("Public");
   const { token } = await params;
   const supabase = await createClient();
   const { data } = await supabase.rpc("shared_map", { p_token: token });
@@ -32,7 +34,7 @@ export default async function SharedMapPage({
         <span className="min-w-0 truncate text-sm font-semibold">{map.name}</span>
         <div className="flex shrink-0 items-center gap-3">
           <CloneButton token={token} />
-          <span className="text-xs text-zinc-500">Solo lectura · BJJ Game Plan</span>
+          <span className="text-xs text-zinc-500">{t("readOnly")}</span>
         </div>
       </header>
       <main className="relative flex-1">

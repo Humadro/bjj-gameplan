@@ -6,6 +6,26 @@
   "LocaleSwitcher": {
     "label": "Language"
   },
+  "Common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "deleteLower": "delete",
+    "edit": "edit",
+    "rename": "rename",
+    "add": "Add",
+    "back": "Back",
+    "undo": "Undo",
+    "clear": "clear ✕",
+    "signOut": "Sign out",
+    "loading": "…"
+  },
+  "Confidence": {
+    "alta": "High",
+    "media": "Medium",
+    "baja": "Low"
+  },
   "Setup": {
     "title": "Supabase isn't configured yet",
     "body": "Fill <code>web/.env.local</code> with your project's URL and anon key (Supabase → Settings → API), then restart <code>npm run dev</code>."
@@ -36,5 +56,254 @@
     "save": "Save",
     "cancel": "Cancel",
     "confirmDelete": "Delete the map \"{name}\" and all its contents?"
+  },
+  "Editor": {
+    "signOut": "Sign out"
+  },
+  "Filter": {
+    "placeholder": "Filter by name…",
+    "confTitle": "{conf} confidence",
+    "withRefTitle": "Only with a study link",
+    "subsOnlyTitle": "Submissions only",
+    "clear": "clear ✕"
+  },
+  "MapSwitcher": {
+    "allMapsTitle": "All maps"
+  },
+  "Legend": {
+    "chip": "❔ Legend",
+    "confidence": "· technique confidence",
+    "posToTech": "position → its technique",
+    "techToPos": "technique → the position it leads to",
+    "toBadPosition": "leads to a bad (bottom) position",
+    "planB": "“on fail” → plan B",
+    "boxIsSubmission": "box = submission",
+    "ballIsPosition": "ball = position",
+    "collapseHint": "–/+N on a ball: collapse / expand its techniques"
+  },
+  "Onboarding": {
+    "title": "First steps",
+    "hide": "hide",
+    "step1": "Create your first position",
+    "step2": "Add a technique from it",
+    "step3": "Say which position it leads to (or mark it a submission)"
+  },
+  "Analysis": {
+    "title": "Gaps in your plan",
+    "noEscapeTitle": "No escape ({count})",
+    "noEscapeBody": "Bad positions with no outgoing technique: {names}.",
+    "deadPosTitle": "Dead positions ({count})",
+    "deadPosBody": "You get here but don't go anywhere: {names}.",
+    "noPlanBTitle": "No plan B ({count})",
+    "noPlanBBody": "Techniques with no defined fallback if they fail: {names}{more}."
+  },
+  "Share": {
+    "share": "Share",
+    "shared": "Shared ✓",
+    "readonlyTitle": "Read-only link",
+    "sharedDesc": "Anyone with the link can view this map (they can't edit it).",
+    "notSharedDesc": "Generate a link so others can view this map without an account.",
+    "copy": "Copy",
+    "copied": "✓",
+    "disable": "Disable link",
+    "regenerate": "Regenerate",
+    "createLink": "Create link"
+  },
+  "Clone": {
+    "copyToAccount": "Copy to my account",
+    "copying": "Copying…"
+  },
+  "Public": {
+    "readOnly": "Read-only · BJJ Game Plan"
+  },
+  "Positions": {
+    "heading": "Positions",
+    "newPlaceholder": "New position",
+    "addButton": "Add position",
+    "badCheckbox": "Bad / bottom position (red arrows)",
+    "badCheckboxShort": "Bad / bottom position",
+    "addStandard": "+ Add standard positions (No-Gi)",
+    "addStandardHint": "Loads the canonical vocabulary. Names you already have are skipped, and none show on the map until you hang a technique off it.",
+    "vocabLoaded": "Vocabulary loaded.",
+    "confirmDelete": "Delete \"{name}\" and its outgoing techniques?",
+    "emptyList": "No positions yet.",
+    "noneMatch": "No position matches the filter.",
+    "deletedWithCount": "Deleted “{name}” and {count} technique(s)",
+    "deletedNoCount": "Deleted “{name}”"
+  },
+  "Techniques": {
+    "heading": "Techniques",
+    "namePlaceholder": "Technique name",
+    "from": "From",
+    "fromEmpty": "Pick a source position",
+    "isSubmission": "It's a submission (box, doesn't lead anywhere)",
+    "leadsTo": "Leads to",
+    "leadsToEmpty": "(none / dead end)",
+    "onFailLabel": "On fail, you end up in… (optional)",
+    "onFailEmpty": "(you stay in the same position)",
+    "planBHint": "Plan B: if this technique fails, which position do you usually end up in?",
+    "confidence": "Confidence",
+    "addButton": "Add technique",
+    "selectMode": "Select…",
+    "chosenCount": "{count} selected ·",
+    "exitSelect": "Done",
+    "emptyList": "No techniques yet.",
+    "noneMatch": "No technique matches the filter.",
+    "submissionShort": "submission",
+    "deletedOne": "Deleted “{name}”",
+    "deletedMany": "Deleted {count} technique(s)",
+    "bulkConfDone": "{count} technique(s) set to {conf} confidence",
+    "newPositionName": "New position name",
+    "createNewOption": "➕ Create a new position…",
+    "standardOptgroup": "Standard (No-Gi) · created on save",
+    "bottomSuffix": " (bottom)"
+  },
+  "Reference": {
+    "summary": "Study link (optional)",
+    "urlPlaceholder": "https://youtu.be/…",
+    "labelPlaceholder": "Label (e.g. Danaher, ep.3)",
+    "secondsPlaceholder": "sec",
+    "secondsTitle": "Start second (YouTube only)"
+  },
+  "Note": {
+    "summary": "Personal note (optional)",
+    "placeholder": "Just for you: details, reminders, who caught you with it…"
+  },
+  "Canonical": {
+    "standardName": "Standard name:"
+  },
+  "Inspector": {
+    "position": "Position",
+    "technique": "Technique",
+    "ficha": "PDF card",
+    "confirmDeletePosition": "Delete \"{name}\" and its outgoing techniques?",
+    "positionSaved": "Position saved",
+    "positionDeleted": "Position deleted",
+    "techniqueSaved": "Technique saved",
+    "techniqueDeleted": "Technique deleted"
+  },
+  "Canvas": {
+    "emptyNoPositions": "Add your first position to start building the map.",
+    "emptyNoLinks": "No position is linked yet. Create a technique that starts from a position so it shows on the map.",
+    "focus": "Focus",
+    "focusAll": "(all)",
+    "modeUp": "reach here ↑",
+    "modeDown": "leave here ↓",
+    "modeMain": "main line ★",
+    "modeTitle": "Change mode: reach here / leave here / main line (high-confidence tree in and out)",
+    "clearFocus": "Clear focus",
+    "expandAll": "expand all ({count})",
+    "expandAllTitle": "Expand all",
+    "refBadge": "Has a study link",
+    "noteBadge": "Has a personal note",
+    "showNTechniques": "Show {count} technique(s)",
+    "collapseThis": "Collapse this position"
+  },
+  "RefDrawer": {
+    "notEmbeddable": "External link (not an embeddable YouTube video).",
+    "openLink": "Open link ↗"
+  },
+  "Export": {
+    "png": "PNG",
+    "pdf": "PDF",
+    "list": "List",
+    "listTitle": "Game plan as a text list (PDF)"
+  },
+  "SeedPanel": {
+    "emptyTitle": "“{name}” is empty",
+    "emptyDesc": "Add a position you start your rolls from. The tree grows from there on its own.",
+    "orMiniPlan": "Or start with a mini-plan",
+    "fullTemplates": "Full templates",
+    "saving": "Saving…"
+  },
+  "Templates": {
+    "de-pie": {
+      "label": "Standing",
+      "description": "3 positions · takedowns to Side Control."
+    },
+    "pasar-guardia": {
+      "label": "Passing the guard",
+      "description": "4 positions · passes to mount."
+    },
+    "juego-abajo": {
+      "label": "Bottom game",
+      "description": "5 positions · sweeps to get out from the bottom."
+    },
+    "ataques-montada": {
+      "label": "Attacks from mount",
+      "description": "2 positions · finishes and the back take."
+    },
+    "posiciones-base": {
+      "label": "Base positions",
+      "description": "~20 canonical positions with the bottom ones marked. No techniques: you hang them."
+    },
+    "mapa-ejemplo": {
+      "label": "Example map",
+      "description": "Full port of Mapa_Juego_BJJ.dot: ~13 positions and ~31 techniques to edit."
+    }
+  },
+  "Palette": {
+    "placeholder": "from half guard > hook, alta > x-guard > single leg, media > side control top\nfrom mount top > armbar, sub, alta\npos rubber guard mala",
+    "oneLineHint": "One line per technique, position or chain. Enter creates everything · Shift+Enter new line · Esc closes.",
+    "cheatsheet": "technique: <c>desde X > name > Y</c> · confidence/submission per technique: <c>> name, alta</c> / <c>> name, sub</c> · chain: <c>A > t1 > B > t2 > C</c> · position: <c>pos name [mala]</c> · map: <c>ir name</c>",
+    "create": "Create",
+    "creating": "Creating…",
+    "review": "Check: {items}",
+    "moreEntries": "+{count} more…",
+    "suggestHint": "↹ Tab completes · ↑↓ move · Esc hides",
+    "previewPosition": "position “{name}”",
+    "previewPositionBad": "position “{name}” (bad)",
+    "previewGoto": "go to map “{name}”",
+    "previewPhrase": "“{text}” · Enter opens the form",
+    "previewSubmission": "submission",
+    "previewNoDest": "(no destination)",
+    "previewChain": "chain ({count}): {summary}",
+    "invalidNoMap": "No map contains “{query}”",
+    "invalidNoPositionName": "Missing the position name",
+    "invalidEmptySegment": "There's an empty segment in the chain",
+    "invalidNoTechniqueName": "Missing the technique name",
+    "flashCreated": "✓ {parts}",
+    "flashTechniques": "{count, plural, one {# technique} other {# techniques}}",
+    "flashPositions": "{count, plural, one {# position} other {# positions}}",
+    "flashNothing": "nothing to create",
+    "quickName": "Technique name",
+    "quickFrom": "From…",
+    "quickTo": "Leads to… (optional)",
+    "quickAdd": "Add",
+    "quickBack": "Back"
+  },
+  "GamePlan": {
+    "planTitle": "Game plan",
+    "card": "CARD",
+    "badPosition": "bad position",
+    "noOutgoing": "(no outgoing techniques)",
+    "submission": "submission",
+    "noExit": "(dead end)",
+    "onFail": "on fail"
+  },
+  "Errors": {
+    "notAuthenticated": "Not signed in.",
+    "invalidMap": "Invalid map.",
+    "emptyName": "The name can't be empty.",
+    "missingMapId": "Missing the map id.",
+    "mapCreateFailed": "Couldn't create the map.",
+    "untitledMap": "Untitled map",
+    "missingLink": "Missing the link.",
+    "linkGone": "That link no longer exists.",
+    "copyPositionsFailed": "Failed to copy positions.",
+    "copyTechniquesFailed": "Map copied, but the techniques failed: {message}",
+    "positionNameRequired": "The position name is required.",
+    "positionNameTaken": "There's already a position with that name in this map.",
+    "missingPositionId": "Missing the position id.",
+    "newPositionFailed": "Couldn't create the new position.",
+    "techniqueNameRequired": "The technique name is required.",
+    "invalidConfidence": "Invalid confidence.",
+    "sourcePositionRequired": "Pick or create the source position.",
+    "missingTechniqueId": "Missing the technique id.",
+    "unknownTemplate": "Unknown template.",
+    "mapNotEmpty": "This map already has positions; a template only loads onto an empty map.",
+    "positionsCreateFailed": "Couldn't create the positions.",
+    "templateTechniquesFailed": "Positions created, but the techniques failed: {message}",
+    "copyOf": "Copy of {name}"
   }
 }

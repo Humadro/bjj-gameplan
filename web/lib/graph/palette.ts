@@ -13,13 +13,20 @@ export type TechSpec = {
   isSubmission: boolean;
 };
 
+// Motivo de una línea inválida, como código (la UI lo traduce con next-intl).
+export type InvalidCode =
+  | "no-map"
+  | "no-position-name"
+  | "empty-segment"
+  | "no-technique-name";
+
 export type ParsedLine =
   | { kind: "empty" }
   | { kind: "position"; name: string; isBad: boolean }
   | { kind: "techniques"; specs: TechSpec[] }
   | { kind: "goto"; map: MapRef }
   | { kind: "phrase"; text: string } // texto suelto: en 1 línea abre el formulario
-  | { kind: "invalid"; reason: string };
+  | { kind: "invalid"; reason: InvalidCode; query?: string };
 
 export const SEP_RE = /\s*(?:->|→|›|>)\s*/;
 export const SEP_SPLIT_RE = /(\s*(?:->|→|›|>)\s*)/; // con captura: conserva los separadores
@@ -62,7 +69,7 @@ export function parseLine(raw: string, maps: MapRef[]): ParsedLine {
     const m = maps.find((x) => x.name.toLowerCase().includes(q));
     return m
       ? { kind: "goto", map: m }
-      : { kind: "invalid", reason: `Ningún mapa contiene «${goto[1].trim()}»` };
+      : { kind: "invalid", reason: "no-map", query: goto[1].trim() };
   }
 
   const pos = text.match(/^(?:\+?pos|posici[oó]n)\s+(.+)$/i);
@@ -75,7 +82,7 @@ export function parseLine(raw: string, maps: MapRef[]): ParsedLine {
     }
     return name
       ? { kind: "position", name, isBad }
-      : { kind: "invalid", reason: "Falta el nombre de la posición" };
+      : { kind: "invalid", reason: "no-position-name" };
   }
 
   if (SEP_RE.test(text)) {
@@ -84,10 +91,10 @@ export function parseLine(raw: string, maps: MapRef[]): ParsedLine {
     const segs = raw.map(stripTags);
 
     if (segs.some((s) => !s.text)) {
-      return { kind: "invalid", reason: "Hay un tramo vacío en la cadena" };
+      return { kind: "invalid", reason: "empty-segment" };
     }
     if (segs.length < 2) {
-      return { kind: "invalid", reason: "Falta el nombre de la técnica" };
+      return { kind: "invalid", reason: "no-technique-name" };
     }
 
     // Partes alternas: posición › técnica › posición › técnica …
@@ -121,35 +128,72 @@ export function parseLine(raw: string, maps: MapRef[]): ParsedLine {
   return { kind: "phrase", text };
 }
 
-export function describe(p: ParsedLine): { icon: string; text: string; bad?: boolean } {
+// Descripción estructurada de una línea para la vista previa de la paleta.
+// La UI la formatea con next-intl (no hay texto de idioma aquí).
+export type LineDescription =
+  | { kind: "empty"; icon: "" }
+  | { kind: "position"; icon: string; name: string; bad: boolean }
+  | { kind: "goto"; icon: string; mapName: string }
+  | { kind: "phrase"; icon: string; text: string }
+  | { kind: "invalid"; icon: string; reason: InvalidCode; query?: string }
+  | {
+      kind: "tech";
+      icon: string;
+      source: string;
+      name: string;
+      confidence: Confidence;
+      tail: TechTail;
+    }
+  | {
+      kind: "chain";
+      icon: string;
+      length: number;
+      source: string;
+      hops: { name: string; confidence: Confidence; tail: TechTail }[];
+    };
+
+export type TechTail =
+  | { kind: "submission" }
+  | { kind: "dest"; name: string }
+  | { kind: "none" };
+
+function tailOf(x: TechSpec): TechTail {
+  if (x.isSubmission) return { kind: "submission" };
+  return x.dest ? { kind: "dest", name: x.dest } : { kind: "none" };
+}
+
+export function describe(p: ParsedLine): LineDescription {
   switch (p.kind) {
     case "position":
-      return { icon: "＋", text: `posición «${p.name}»${p.isBad ? " (mala)" : ""}` };
+      return { kind: "position", icon: "＋", name: p.name, bad: p.isBad };
     case "goto":
-      return { icon: "→", text: `ir al mapa «${p.map.name}»` };
+      return { kind: "goto", icon: "→", mapName: p.map.name };
     case "phrase":
-      return { icon: "?", text: `«${p.text}» · Enter abre el formulario` };
+      return { kind: "phrase", icon: "?", text: p.text };
     case "invalid":
-      return { icon: "⚠", text: p.reason, bad: true };
+      return { kind: "invalid", icon: "⚠", reason: p.reason, query: p.query };
     case "techniques": {
       const s = p.specs;
-      const tail = (x: TechSpec) =>
-        x.isSubmission ? "sumisión" : (x.dest ?? "(sin destino)");
       if (s.length === 1) {
         return {
+          kind: "tech",
           icon: s[0].isSubmission ? "◻" : "•",
-          text: `${s[0].source} → ${s[0].name} → ${tail(s[0])} · ${s[0].confidence}`,
+          source: s[0].source,
+          name: s[0].name,
+          confidence: s[0].confidence,
+          tail: tailOf(s[0]),
         };
       }
-      const parts = [s[0].source];
-      for (const x of s) {
-        parts.push(`${x.name}·${x.confidence}`);
-        parts.push(tail(x));
-      }
-      return { icon: "⛓", text: `cadena (${s.length}): ${parts.join(" → ")}` };
+      return {
+        kind: "chain",
+        icon: "⛓",
+        length: s.length,
+        source: s[0].source,
+        hops: s.map((x) => ({ name: x.name, confidence: x.confidence, tail: tailOf(x) })),
+      };
     }
     default:
-      return { icon: "", text: "" };
+      return { kind: "empty", icon: "" };
   }
 }
 

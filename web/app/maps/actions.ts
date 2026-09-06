@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import type { Position, Technique } from "@/lib/types";
 
@@ -9,6 +10,10 @@ export type MapActionResult = { error?: string };
 
 function str(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
+}
+
+async function E(key: string, values?: Record<string, string | number>) {
+  return (await getTranslations("Errors"))(key, values);
 }
 
 async function authed() {
@@ -22,16 +27,16 @@ async function authed() {
 // Crea un mapa y entra en él.
 export async function createMap(formData: FormData): Promise<MapActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
-  const name = str(formData, "name") || "Mapa sin nombre";
+  const name = str(formData, "name") || (await E("untitledMap"));
 
   const { data, error } = await supabase
     .from("maps")
     .insert({ name, user_id: user.id })
     .select("id")
     .single();
-  if (error || !data) return { error: error?.message ?? "No se pudo crear el mapa." };
+  if (error || !data) return { error: error?.message ?? (await E("mapCreateFailed")) };
 
   revalidatePath("/maps");
   redirect(`/maps/${data.id}`);
@@ -39,12 +44,12 @@ export async function createMap(formData: FormData): Promise<MapActionResult> {
 
 export async function renameMap(formData: FormData): Promise<MapActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const id = str(formData, "id");
   const name = str(formData, "name");
-  if (!id) return { error: "Falta el id del mapa." };
-  if (!name) return { error: "El nombre no puede estar vacío." };
+  if (!id) return { error: await E("missingMapId") };
+  if (!name) return { error: await E("emptyName") };
 
   const { error } = await supabase.from("maps").update({ name }).eq("id", id);
   if (error) return { error: error.message };
@@ -58,11 +63,11 @@ export async function renameMap(formData: FormData): Promise<MapActionResult> {
 // slug nuevo si no había; "regenerar" = desactivar y volver a activar.
 export async function setMapSharing(formData: FormData): Promise<MapActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const id = str(formData, "id");
   const enabled = str(formData, "enabled") === "1";
-  if (!id) return { error: "Falta el id del mapa." };
+  if (!id) return { error: await E("missingMapId") };
 
   if (!enabled) {
     const { error } = await supabase.from("maps").update({ public_slug: null }).eq("id", id);
@@ -97,11 +102,11 @@ export async function cloneSharedMap(
 ): Promise<{ error?: string; needsAuth?: boolean }> {
   const { supabase, user } = await authed();
   if (!user) return { needsAuth: true };
-  if (!token) return { error: "Falta el enlace." };
+  if (!token) return { error: await E("missingLink") };
 
   const { data, error: rpcError } = await supabase.rpc("shared_map", { p_token: token });
   if (rpcError) return { error: rpcError.message };
-  if (!data) return { error: "Ese enlace ya no existe." };
+  if (!data) return { error: await E("linkGone") };
 
   const shared = data as {
     map: { name: string };
@@ -111,10 +116,10 @@ export async function cloneSharedMap(
 
   const { data: newMap, error: mapError } = await supabase
     .from("maps")
-    .insert({ name: `Copia de ${shared.map.name}`.slice(0, 80), user_id: user.id })
+    .insert({ name: (await E("copyOf", { name: shared.map.name })).slice(0, 80), user_id: user.id })
     .select("id")
     .single();
-  if (mapError || !newMap) return { error: mapError?.message ?? "No se pudo crear el mapa." };
+  if (mapError || !newMap) return { error: mapError?.message ?? (await E("mapCreateFailed")) };
 
   const oldToNew = new Map<string, string>();
   if (shared.positions.length > 0) {
@@ -132,7 +137,7 @@ export async function cloneSharedMap(
         })),
       )
       .select("id, name");
-    if (posError || !insPos) return { error: posError?.message ?? "Fallo al copiar posiciones." };
+    if (posError || !insPos) return { error: posError?.message ?? (await E("copyPositionsFailed")) };
 
     const nameToNew = new Map(insPos.map((p) => [p.name, p.id as string]));
     for (const p of shared.positions) {
@@ -161,7 +166,7 @@ export async function cloneSharedMap(
 
   if (rows.length > 0) {
     const { error: techError } = await supabase.from("techniques").insert(rows);
-    if (techError) return { error: `Mapa copiado, pero fallaron las técnicas: ${techError.message}` };
+    if (techError) return { error: await E("copyTechniquesFailed", { message: techError.message }) };
   }
 
   revalidatePath("/maps");
@@ -170,10 +175,10 @@ export async function cloneSharedMap(
 
 export async function deleteMap(formData: FormData): Promise<MapActionResult> {
   const { supabase, user } = await authed();
-  if (!user) return { error: "No autenticado." };
+  if (!user) return { error: await E("notAuthenticated") };
 
   const id = str(formData, "id");
-  if (!id) return { error: "Falta el id del mapa." };
+  if (!id) return { error: await E("missingMapId") };
 
   // Posiciones y técnicas caen por ON DELETE CASCADE.
   const { error } = await supabase.from("maps").delete().eq("id", id);

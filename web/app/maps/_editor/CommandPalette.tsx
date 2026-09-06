@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createPosition, createTechnique } from "./actions";
 import { CanonicalHint } from "./CanonicalNameInput";
 import { CANONICAL_POSITIONS } from "@/lib/seed";
@@ -10,9 +11,51 @@ import {
   describe,
   lineTokens,
   parseLine,
+  type LineDescription,
   type MapRef,
+  type TechTail,
 } from "@/lib/graph/palette";
 import type { Confidence, Position } from "@/lib/types";
+
+type PaletteT = ReturnType<typeof useTranslations>;
+
+// Formatea la descripción estructurada de una línea para la vista previa.
+function fmtTail(tail: TechTail, t: PaletteT): string {
+  if (tail.kind === "submission") return t("previewSubmission");
+  if (tail.kind === "dest") return tail.name;
+  return t("previewNoDest");
+}
+
+function fmtDescription(d: LineDescription, t: PaletteT, cf: PaletteT): string {
+  switch (d.kind) {
+    case "position":
+      return d.bad ? t("previewPositionBad", { name: d.name }) : t("previewPosition", { name: d.name });
+    case "goto":
+      return t("previewGoto", { name: d.mapName });
+    case "phrase":
+      return t("previewPhrase", { text: d.text });
+    case "invalid":
+      return d.reason === "no-map"
+        ? t("invalidNoMap", { query: d.query ?? "" })
+        : d.reason === "no-position-name"
+          ? t("invalidNoPositionName")
+          : d.reason === "empty-segment"
+            ? t("invalidEmptySegment")
+            : t("invalidNoTechniqueName");
+    case "tech":
+      return `${d.source} → ${d.name} → ${fmtTail(d.tail, t)} · ${cf(d.confidence)}`;
+    case "chain": {
+      const parts = [d.source];
+      for (const h of d.hops) {
+        parts.push(`${h.name}·${cf(h.confidence)}`);
+        parts.push(fmtTail(h.tail, t));
+      }
+      return t("previewChain", { count: d.length, summary: parts.join(" → ") });
+    }
+    default:
+      return "";
+  }
+}
 
 const cls = "rounded-md border border-black/15 px-2 py-1 text-sm";
 
@@ -50,6 +93,8 @@ export default function CommandPalette({
   maps: MapRef[];
 }) {
   const router = useRouter();
+  const t = useTranslations("Palette");
+  const cf = useTranslations("Confidence");
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"text" | "form">("text");
@@ -196,7 +241,7 @@ export default function CommandPalette({
         (entries.length > 1 && e.parsed.kind === "goto"),
     );
     if (problems.length) {
-      setErrMsg(`Revisa: ${problems.map((e) => `«${e.raw}»`).join(" · ")}`);
+      setErrMsg(t("review", { items: problems.map((e) => `«${e.raw}»`).join(" · ") }));
       return;
     }
 
@@ -215,7 +260,7 @@ export default function CommandPalette({
         fd.set("name", e.parsed.name);
         if (e.parsed.isBad) fd.set("is_bad", "on");
         const res = await createPosition(fd);
-        if (res?.error && !/ya hay una posici/i.test(res.error)) {
+        if (res?.error && res.code !== "duplicate") {
           setErrMsg(`«${e.raw}»: ${res.error}`);
           return;
         }
@@ -246,9 +291,9 @@ export default function CommandPalette({
       }
 
       const parts: string[] = [];
-      if (techCount) parts.push(`${techCount} técnica${techCount === 1 ? "" : "s"}`);
-      if (posCount) parts.push(`${posCount} posición${posCount === 1 ? "" : "es"}`);
-      setFlash(`✓ ${parts.join(" · ") || "nada que crear"}`);
+      if (techCount) parts.push(t("flashTechniques", { count: techCount }));
+      if (posCount) parts.push(t("flashPositions", { count: posCount }));
+      setFlash(t("flashCreated", { parts: parts.join(" · ") || t("flashNothing") }));
       setText("");
       setMode("text");
       taRef.current?.focus();
@@ -328,9 +373,7 @@ export default function CommandPalette({
                     runAll();
                   }
                 }}
-                placeholder={
-                  "desde media guardia > gancho, alta > x-guard > single leg, media > side control top\ndesde mount top > armbar, sub, alta\npos rubber guard mala"
-                }
+                placeholder={t("placeholder")}
                 className="relative block w-full resize-y rounded-md border border-black/15 bg-transparent px-3 py-2 font-mono text-[13px] leading-relaxed text-transparent caret-zinc-900 placeholder:text-zinc-400"
               />
 
@@ -353,7 +396,7 @@ export default function CommandPalette({
                     </li>
                   ))}
                   <li className="border-t border-black/10 px-2 py-1 text-[10px] text-zinc-400">
-                    ↹ Tab completa · ↑↓ mueve · Esc oculta
+                    {t("suggestHint")}
                   </li>
                 </ul>
               )}
@@ -366,21 +409,19 @@ export default function CommandPalette({
                   return (
                     <li
                       key={i}
-                      className={d.bad ? "text-red-600" : "text-zinc-600"}
+                      className={d.kind === "invalid" ? "text-red-600" : "text-zinc-600"}
                     >
                       <span className="mr-1 text-zinc-400">{d.icon}</span>
-                      {d.text}
+                      {fmtDescription(d, t, cf)}
                     </li>
                   );
                 })}
                 {entries.length > 12 && (
-                  <li className="text-zinc-400">+{entries.length - 12} más…</li>
+                  <li className="text-zinc-400">{t("moreEntries", { count: entries.length - 12 })}</li>
                 )}
               </ul>
             ) : (
-              <p className="mt-2 text-xs text-zinc-500">
-                Una línea por técnica, posición o cadena. Enter crea todo · Shift+Enter salto de línea · Esc cierra.
-              </p>
+              <p className="mt-2 text-xs text-zinc-500">{t("oneLineHint")}</p>
             )}
 
             {errMsg && <p className="mt-1 text-xs text-red-600">{errMsg}</p>}
@@ -388,10 +429,7 @@ export default function CommandPalette({
 
             <div className="mt-2 flex items-center justify-between gap-2">
               <p className="text-[11px] leading-relaxed text-zinc-400">
-                técnica: <code>desde X &gt; nombre &gt; Y</code> · confianza/sumisión por
-                técnica: <code>&gt; nombre, alta</code> / <code>&gt; nombre, sub</code> ·
-                cadena: <code>A &gt; t1 &gt; B &gt; t2 &gt; C</code> · posición:{" "}
-                <code>pos nombre [mala]</code> · mapa: <code>ir nombre</code>
+                {t.rich("cheatsheet", { c: (chunks) => <code>{chunks}</code> })}
               </p>
               <button
                 type="button"
@@ -399,7 +437,7 @@ export default function CommandPalette({
                 disabled={pending || entries.length === 0 || hasProblem}
                 className="shrink-0 rounded-md bg-zinc-900 px-3 py-1 text-xs text-white disabled:opacity-50"
               >
-                {pending ? "Creando…" : "Crear"}
+                {pending ? t("creating") : t("create")}
               </button>
             </div>
           </>
@@ -447,6 +485,8 @@ function QuickForm({
   onCancel: () => void;
   onSubmit: (name: string, source: string, dest: string, confidence: Confidence) => void;
 }) {
+  const t = useTranslations("Palette");
+  const cf = useTranslations("Confidence");
   const [name, setName] = useState(initialName);
   const [source, setSource] = useState(initialSource);
   const [dest, setDest] = useState(initialDest);
@@ -476,14 +516,14 @@ function QuickForm({
         autoFocus
         value={name}
         onChange={(e) => setName(e.currentTarget.value)}
-        placeholder="Nombre de la técnica"
+        placeholder={t("quickName")}
         className={cls}
       />
       <input
         list="cp-pos"
         value={source}
         onChange={(e) => setSource(e.currentTarget.value)}
-        placeholder="Desde…"
+        placeholder={t("quickFrom")}
         className={cls}
       />
       <CanonicalHint value={source} onUse={setSource} />
@@ -491,7 +531,7 @@ function QuickForm({
         list="cp-pos"
         value={dest}
         onChange={(e) => setDest(e.currentTarget.value)}
-        placeholder="Lleva a… (opcional)"
+        placeholder={t("quickTo")}
         className={cls}
       />
       <CanonicalHint value={dest} onUse={setDest} />
@@ -500,9 +540,9 @@ function QuickForm({
         onChange={(e) => setConfidence(e.currentTarget.value as Confidence)}
         className={cls}
       >
-        <option value="alta">Alta</option>
-        <option value="media">Media</option>
-        <option value="baja">Baja</option>
+        <option value="alta">{cf("alta")}</option>
+        <option value="media">{cf("media")}</option>
+        <option value="baja">{cf("baja")}</option>
       </select>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
@@ -511,14 +551,14 @@ function QuickForm({
           disabled={pending}
           className="rounded-md bg-zinc-900 px-3 py-1 text-sm text-white disabled:opacity-60"
         >
-          Añadir
+          {t("quickAdd")}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-md border border-black/15 px-3 py-1 text-sm"
         >
-          Volver
+          {t("quickBack")}
         </button>
       </div>
     </form>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 const KEY = "bjj_onboarding_dismissed";
 
@@ -15,6 +16,7 @@ export default function OnboardingChecklist({
   hasTechniques: boolean;
   hasRoutedTechnique: boolean;
 }) {
+  const t = useTranslations("Onboarding");
   // Empieza oculto para no parpadear en SSR; tras montar lee la preferencia real.
   const [dismissed, setDismissed] = useState(true);
 
@@ -30,9 +32,9 @@ export default function OnboardingChecklist({
   }, []);
 
   const steps: Step[] = [
-    { label: "Crea tu primera posición", done: hasPositions },
-    { label: "Añade una técnica desde ella", done: hasTechniques },
-    { label: "Di a qué posición te lleva (o márcala como sumisión)", done: hasRoutedTechnique },
+    { label: t("step1"), done: hasPositions },
+    { label: t("step2"), done: hasTechniques },
+    { label: t("step3"), done: hasRoutedTechnique },
   ];
   const allDone = steps.every((s) => s.done);
 
@@ -51,10 +53,10 @@ export default function OnboardingChecklist({
     <div className="rounded-lg border border-black/10 bg-zinc-50 p-3 text-sm">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          Primeros pasos
+          {t("title")}
         </span>
         <button onClick={dismiss} className="text-xs text-zinc-400 hover:text-zinc-700">
-          ocultar
+          {t("hide")}
         </button>
       </div>
       <ol className="mt-2 flex flex-col gap-1.5">

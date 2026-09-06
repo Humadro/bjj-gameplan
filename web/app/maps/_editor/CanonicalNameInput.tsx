@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { suggestCanonical } from "@/lib/graph/canonical";
 import { CANONICAL_POS_LIST_ID } from "./CanonicalPositionsDatalist";
 
@@ -16,11 +17,12 @@ export function CanonicalHint({
   value: string;
   onUse: (name: string) => void;
 }) {
+  const t = useTranslations("Canonical");
   const suggestion = suggestCanonical(value);
   if (!suggestion) return null;
   return (
     <p className="text-[11px] leading-snug text-amber-700 dark:text-amber-500">
-      Nombre estándar:{" "}
+      {t("standardName")}{" "}
       <button
         type="button"
         onClick={() => onUse(suggestion)}

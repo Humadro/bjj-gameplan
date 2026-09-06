@@ -92,8 +92,16 @@ describe("describe", () => {
   it("summarises a chain with per-hop confidence", () => {
     const p = parseLine("a > t1, alta > b > t2, baja > c", maps);
     const d = describeLine(p);
-    expect(d.text).toContain("t1·alta");
-    expect(d.text).toContain("t2·baja");
+    if (d.kind !== "chain") throw new Error("expected chain");
+    expect(d.hops.map((h) => [h.name, h.confidence])).toEqual([
+      ["t1", "alta"],
+      ["t2", "baja"],
+    ]);
+  });
+
+  it("codes an invalid goto reason", () => {
+    const d = describeLine(parseLine("ir nope", maps));
+    expect(d).toMatchObject({ kind: "invalid", reason: "no-map", query: "nope" });
   });
 });
 
