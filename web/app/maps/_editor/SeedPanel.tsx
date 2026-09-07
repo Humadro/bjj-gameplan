@@ -32,7 +32,7 @@ export default function SeedPanel({
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-white p-8">
+    <div className="h-full overflow-y-auto bg-white p-8 pb-24 md:pb-8">
       <div className="mx-auto w-full max-w-lg">
         <h2 className="text-lg font-semibold">{t("emptyTitle", { name: mapName })}</h2>
         <p className="mt-1 text-sm text-zinc-500">{t("emptyDesc")}</p>

@@ -267,7 +267,7 @@ export default function TechniquePanel({
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+      <h2 className="hidden text-sm font-semibold uppercase tracking-wide text-zinc-500 md:block">
         {t("heading")}
       </h2>
 

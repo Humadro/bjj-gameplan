@@ -77,7 +77,7 @@ export default function NodeInspector({
   }
 
   return (
-    <div className="absolute right-0 top-0 z-20 flex h-full w-[360px] max-w-[85%] flex-col gap-3 overflow-y-auto border-l border-black/10 bg-white p-3 shadow-lg">
+    <div className="fixed inset-x-0 bottom-0 z-50 flex max-h-[80%] w-full flex-col gap-3 overflow-y-auto rounded-t-2xl border-t border-black/10 bg-white p-3 shadow-lg md:absolute md:inset-x-auto md:right-0 md:top-0 md:z-20 md:h-full md:max-h-none md:w-[360px] md:max-w-[85%] md:rounded-none md:border-l md:border-t-0">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold">
           {position ? t("position") : t("technique")}

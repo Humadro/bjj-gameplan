@@ -58,7 +58,9 @@
     "confirmDelete": "¿Borrar el mapa \"{name}\" y todo su contenido?"
   },
   "Editor": {
-    "signOut": "Salir"
+    "signOut": "Salir",
+    "open": "Editar",
+    "add": "Añadir"
   },
   "Filter": {
     "placeholder": "Filtrar por nombre…",
@@ -197,6 +199,7 @@
     "expandAllTitle": "Desplegar todas",
     "refBadge": "Tiene enlace de estudio",
     "noteBadge": "Tiene una nota personal",
+    "moreTools": "Más opciones",
     "showNTechniques": "Mostrar {count} técnica(s)",
     "collapseThis": "Plegar esta posición"
   },

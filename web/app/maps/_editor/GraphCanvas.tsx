@@ -84,7 +84,7 @@ function PositionNode({ data }: NodeProps) {
             d.onToggleCollapse!();
           }}
           title={collapsed ? t("showNTechniques", { count: d.hiddenCount ?? 0 }) : t("collapseThis")}
-          className="absolute -bottom-1.5 left-1/2 flex h-4 min-w-4 -translate-x-1/2 items-center justify-center rounded-full border border-black/15 bg-white px-1 text-[9px] font-bold leading-none text-zinc-600 shadow hover:bg-black/5"
+          className="absolute -bottom-1.5 left-1/2 flex h-4 min-w-4 -translate-x-1/2 items-center justify-center rounded-full border border-black/15 bg-white px-1 text-[9px] font-bold leading-none text-zinc-600 shadow hover:bg-black/5 max-md:-bottom-3 max-md:h-6 max-md:min-w-6 max-md:text-[11px]"
         >
           {collapsed ? `+${d.hiddenCount}` : "–"}
         </button>
@@ -142,7 +142,7 @@ function RefDrawer({ selected, onClose }: { selected: SelectedRef; onClose: () =
   const t = useTranslations("RefDrawer");
   const embed = youtubeEmbedUrl(selected.ref.url, selected.ref.startSeconds);
   return (
-    <div className="absolute right-0 top-0 z-20 flex h-full w-[360px] max-w-[85%] flex-col gap-3 border-l border-black/10 bg-white p-3 shadow-lg">
+    <div className="fixed inset-x-0 bottom-0 z-50 flex max-h-[80%] w-full flex-col gap-3 overflow-y-auto rounded-t-2xl border-t border-black/10 bg-white p-3 shadow-lg md:absolute md:inset-x-auto md:right-0 md:top-0 md:z-20 md:max-h-none md:h-full md:w-[360px] md:max-w-[85%] md:rounded-none md:border-l md:border-t-0">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{selected.title}</p>
@@ -353,10 +353,11 @@ export default function GraphCanvas({
       onNodeClick={(_, node) => onNodeClick(node)}
       proOptions={{ hideAttribution: true }}
       style={{ background: "#ffffff" }}
+      fitViewOptions={{ padding: 0.15 }}
     >
       <Background color="#d4d4d8" gap={22} />
       <Controls showInteractive={false} />
-      <MiniMap pannable zoomable />
+      <MiniMap pannable zoomable className="hidden md:block" />
       <Panel position="top-left" className="flex flex-col items-start gap-1">
         <div className="flex items-center gap-1 rounded-md border border-black/10 bg-white/95 px-2 py-1 text-xs shadow-sm">
           <span className="text-zinc-500">{t("focus")}</span>
@@ -405,8 +406,23 @@ export default function GraphCanvas({
         <GraphLegend />
       </Panel>
       <Panel position="top-right" className="flex items-start gap-2">
-        {toolbar}
-        <ExportButton mapName={mapName} positions={positions} techniques={techniques} />
+        {/* Escritorio: barra visible. Móvil: plegada tras ⋯ para no tapar el lienzo. */}
+        <div className="hidden items-start gap-2 md:flex">
+          {toolbar}
+          <ExportButton mapName={mapName} positions={positions} techniques={techniques} />
+        </div>
+        <details className="md:hidden">
+          <summary
+            className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-md border border-black/10 bg-white/95 text-sm shadow-sm [&::-webkit-details-marker]:hidden"
+            title={t("moreTools")}
+          >
+            ⋯
+          </summary>
+          <div className="mt-1 flex flex-col items-end gap-2 rounded-md border border-black/10 bg-white/95 p-2 shadow-sm">
+            {toolbar}
+            <ExportButton mapName={mapName} positions={positions} techniques={techniques} />
+          </div>
+        </details>
       </Panel>
       {selectedRef && (
         <RefDrawer selected={selectedRef} onClose={() => setSelectedRef(null)} />

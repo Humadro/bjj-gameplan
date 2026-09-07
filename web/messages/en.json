@@ -58,7 +58,9 @@
     "confirmDelete": "Delete the map \"{name}\" and all its contents?"
   },
   "Editor": {
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "open": "Edit",
+    "add": "Add"
   },
   "Filter": {
     "placeholder": "Filter by name…",
@@ -197,6 +199,7 @@
     "expandAllTitle": "Expand all",
     "refBadge": "Has a study link",
     "noteBadge": "Has a personal note",
+    "moreTools": "More options",
     "showNTechniques": "Show {count} technique(s)",
     "collapseThis": "Collapse this position"
   },

@@ -87,15 +87,19 @@ export default function CommandPalette({
   mapId,
   positions,
   maps,
+  open,
+  onOpenChange,
 }: {
   mapId: string;
   positions: Position[];
   maps: MapRef[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
   const t = useTranslations("Palette");
   const cf = useTranslations("Confidence");
-  const [open, setOpen] = useState(false);
+  const setOpen = onOpenChange;
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"text" | "form">("text");
   const [flash, setFlash] = useState<string | null>(null);
@@ -111,14 +115,14 @@ export default function CommandPalette({
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setOpen((v) => !v);
+        setOpen(!open);
       } else if (e.key === "Escape" && open) {
         setOpen(false);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, setOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -311,7 +315,7 @@ export default function CommandPalette({
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-lg rounded-xl border border-black/10 bg-white p-3 shadow-xl"
+        className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-xl border border-black/10 bg-white p-3 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {mode === "text" ? (
